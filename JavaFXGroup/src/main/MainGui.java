@@ -1,8 +1,10 @@
 package main;
 
 import java.util.LinkedHashSet;
+import java.util.Set;
 
 import devs.DevsState;
+import devs.Port;
 import devs.StateRect;
 import devs.Transition;
 import javafx.application.Application;
@@ -16,6 +18,7 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Screen;
@@ -54,8 +57,6 @@ public class MainGui extends Application{
 	 * Les coordonnées nécessaires pour la mise à jour de la position lors du drag and drop.
 	 */
 	private double originX,originY,originTranslateX,originTranslateY;
-	//private int inc=0;
-
 	/**
 	 * Initialisation et lancement de l'interface
 	 * @param primaryStage La fenêtre principale
@@ -111,6 +112,7 @@ public class MainGui extends Application{
 			}
 		});
 		
+		//Efface tout
 		cleanButton.setOnAction(e->{
 			currentAction=Action.NONE;
 			canvas.getChildren().remove(1, canvas.getChildren().size());
@@ -118,6 +120,7 @@ public class MainGui extends Application{
 			states.clear();
 			src=null;
 		});
+		
 		
 		double sceneWidth=Screen.getPrimary().getVisualBounds().getWidth();
 		Rectangle R = new Rectangle(0,0,sceneWidth,800);
@@ -155,7 +158,7 @@ public class MainGui extends Application{
 				new Button("Debug"),
 				new Button("Profile")
 		);
-		s = new Scene(root, 300, 300, Color.BLACK);
+		s = new Scene(root, 1200, 600, Color.BLACK);
 		ScrollPane scroller = new ScrollPane();
 		scroller.setContent(canvas);
 		root.getChildren().add(toolBar);
@@ -181,21 +184,33 @@ public class MainGui extends Application{
 		rect.setTrueY(rect.getY());
 		DevsState Drect=new DevsState("état",rect);
 		setDragAndDrop(Drect);
-		//inc++;
+		setEditState(Drect);
 		rectangles.add(rect);
 		states.add(Drect);
 		canvas.getChildren().add(rect);
 		
 		//Dessine le nom de l'état au centre du rectangle
-		Drect.getName().setX((rect.getX()+rect.getStateWidth()/2)-Drect.getName().getBoundsInLocal().getWidth()/2);
-		Drect.getName().setY(rect.getY()+rect.getStateHeight()/2);
-		canvas.getChildren().add(Drect.getName());
+		drawName(Drect);
+		drawPorts(Drect);
+	}
+	
+	/**
+	 * Dessine le nom d'un état dans le centre du rectangle.
+	 * @param state L'état concerné.
+	 */
+	public void drawName(DevsState state){
+		StateRect rect=state.getRect();
+		state.getName().setX((rect.getX()+rect.getStateWidth()/2)-state.getName().getBoundsInLocal().getWidth()/2);
+		state.getName().setY(rect.getY()+rect.getStateHeight()/2);
+		if(canvas.getChildren().contains(state.getName()))
+			canvas.getChildren().remove(state.getName());
+		canvas.getChildren().add(state.getName());
 	}
 	
 	/**
 	 * Dessine un lien entre deux états.
 	 * @param src L'état source.
-	 * @param state L'état de déstination
+	 * @param dest L'état de déstination
 	 */
 	public void drawLine(DevsState src,DevsState dest){
 		Point2D P = getJoin(src.getRect(),dest.getRect());
@@ -209,6 +224,58 @@ public class MainGui extends Application{
 			canvas.getChildren().add(line);
 		src.getRect().setColor(Color.BLACK);
 		src=null;
+	}
+	
+	/**
+	 * Dessine les ports sur un état donné.
+	 * @param state L'état concerné.
+	 */
+	public void drawPorts(DevsState state){
+		StateRect rect = state.getRect();
+		Set<Port> inputPorts=state.getInputPorts();
+		Set<Port> outputPorts=state.getOutputPorts();
+		double step = rect.getStateHeight()/(inputPorts.size()+1);
+		int inc=1;
+		Circle circle;
+		for(Port p : inputPorts){
+			circle=p.getCircle();
+			circle.setCenterX(rect.getX());
+			circle.setCenterY(rect.getY()+step*inc);
+			canvas.getChildren().add(circle);
+			inc++;
+		}
+		inc=1;
+		step=rect.getStateHeight()/(outputPorts.size()+1);
+		for(Port p : outputPorts){
+			circle=p.getCircle();
+			circle.setCenterX(rect.getX()+rect.getStateWidth());
+			circle.setCenterY(rect.getY()+step*inc);
+			canvas.getChildren().add(circle);
+			inc++;
+		}
+	}
+	
+	/**
+	 * Efface les ports d'un état.
+	 * @param state L'état concerné.
+	 */
+	public void removePorts(DevsState state){
+		for(Port p : state.getPorts()){
+			if(canvas.getChildren().contains(p.getCircle()))
+				canvas.getChildren().remove(p.getCircle());
+		}
+	}
+	
+	/**
+	 * Met à jour les données de translation pour les ports.
+	 * @param state L'état contenant les ports concernés.
+	 */
+	public void updatePortTranslations(DevsState state){
+		StateRect rect=state.getRect();
+		for(Port p : state.getPorts()){
+			p.getCircle().setTranslateX(rect.getTrueX()-rect.getX());
+			p.getCircle().setTranslateY(rect.getTrueY()-rect.getY());
+		}
 	}
 	
 	/**
@@ -231,6 +298,11 @@ public class MainGui extends Application{
 				state.getName().setTranslateX(newTranslateX);
 				state.getName().setTranslateY(newTranslateY);
 				
+				for(Port p : state.getPorts()){
+					p.getCircle().setTranslateX(newTranslateX);
+					p.getCircle().setTranslateY(newTranslateY);
+				}
+
 				for(Transition transition : state.getTransitions()){
 					Point2D P = getJoin(rect,transition.getDest().getRect());
 					Point2D P1 = getJoin(transition.getDest().getRect(),rect);
@@ -282,6 +354,11 @@ public class MainGui extends Application{
 			state.getName().setTranslateX(newTranslateX);
 			state.getName().setTranslateY(newTranslateY);
 			
+			for(Port p : state.getPorts()){
+				p.getCircle().setTranslateX(newTranslateX);
+				p.getCircle().setTranslateY(newTranslateY);
+			}
+			
 			for(Transition transition : state.getTransitions()){
 				Point2D P = getJoin(rect,transition.getDest().getRect());
 				transition.getLine().setStartX(P.getX());
@@ -304,6 +381,21 @@ public class MainGui extends Application{
 				originTranslateX = rect.getTranslateX();
 				originTranslateY = rect.getTranslateY();
 		});
+	}
+	
+	/**
+	 * Ajoute la possibilité de modifier un état en double cliquant.
+	 * @param state L'état à modifier.
+	 */
+	public void setEditState(DevsState state){
+		StateRect rect=state.getRect();
+		rect.setOnMouseClicked(e->{
+			if(e.getClickCount()==2){
+				EditStateStage stage=new EditStateStage(this,state);
+				stage.show();
+			}
+		});
+		
 	}
 	
 	

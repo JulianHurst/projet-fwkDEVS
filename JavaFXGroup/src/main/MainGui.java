@@ -54,6 +54,10 @@ public class MainGui extends Application{
 	 */
 	private DevsState src=null;
 	/**
+	 * Le port source attribué lors de la création de transitions.
+	 */
+	private Port srcPort=null;
+	/**
 	 * Les coordonnées nécessaires pour la mise à jour de la position lors du drag and drop.
 	 */
 	private double originX,originY,originTranslateX,originTranslateY;
@@ -74,8 +78,14 @@ public class MainGui extends Application{
 		cleanButton=new Button("Clean");
 		
 		rectButton.setOnAction(e->{
+			src=null;
+			if(srcPort!=null)
+				srcPort.getCircle().setStroke(Color.BLACK);
 			currentAction=Action.RECT;
 			src=null;
+			for(DevsState state : states)
+				for(Port p : state.getPorts())
+					p.getCircle().setOnMousePressed(event->{});
 			setDragAndDropAll();
 		});
 		
@@ -87,28 +97,25 @@ public class MainGui extends Application{
 				
 			}
 			for(DevsState state : states){
-				//Associe un état source (redessiné en rouge) si il y en a pas. Sinon on calcule les coordonnés, ajoute la transition, dessine le lien et remet src à null. 
-				state.getRect().setOnMousePressed(event->{
-					if(src==null){
-						src=state;
-						state.getRect().setColor(Color.RED);
-					}
-					else{
-						//Récupère coordonnées de départ de la ligne  
-						Point2D P = getJoin(src.getRect(),state.getRect());
-						//Récupère coordonnées de fin de la ligne 
-						Point2D P1 = getJoin(state.getRect(),src.getRect());
-						Line line=new Line();
-						line.setStartX(P.getX());
-						line.setStartY(P.getY());
-						line.setEndX(P1.getX());
-						line.setEndY(P1.getY());
-						if(src.addTransition(new Transition(src,state,line)))
-							canvas.getChildren().add(line);
-						src.getRect().setColor(Color.BLACK);
-						src=null;
-					}
-				});
+				for(Port p : state.getPorts()){
+					Circle c=p.getCircle();
+					c.setOnMousePressed(event->{
+						if(src==null){
+							src=state;
+							srcPort=p;
+							c.setStroke(Color.RED);
+						}
+						else if(!state.equals(src) && !srcPort.getType().equals(p.getType())){
+							if(srcPort.getType().equals(Port.Type.INPUT)){
+								drawLine(src,srcPort,p);
+							}
+							else
+								drawLine(state,p,srcPort);
+							srcPort.getCircle().setStroke(Color.BLACK);
+							src=null;
+						}
+					});
+				}
 			}
 		});
 		
@@ -141,7 +148,6 @@ public class MainGui extends Application{
 				case LINE:
 					break;
 				default:
-					
 			}
 				
 		});
@@ -220,10 +226,57 @@ public class MainGui extends Application{
 		line.setStartY(P.getY());
 		line.setEndX(P1.getX());
 		line.setEndY(P1.getY());
-		if(dest.addTransition(new Transition(src,dest,line)))
-			canvas.getChildren().add(line);
+		//if(dest.addTransition(new Transition(src,dest,line)))
+			//canvas.getChildren().add(line);
 		src.getRect().setColor(Color.BLACK);
 		src=null;
+	}
+	
+	/**
+	 * Dessine une transition entre deux ports.
+	 * @param state L'état concerné.
+	 * @param src Le port source.
+	 * @param dest Le port destinataire.
+	 */
+	public void drawLine(DevsState state,Port src,Port dest){
+		Line line = new Line();
+		line.setStartX(src.getCircle().getCenterX()+src.getCircle().getTranslateX());
+		line.setStartY(src.getCircle().getCenterY()+src.getCircle().getTranslateY());
+		line.setEndX(dest.getCircle().getCenterX()+dest.getCircle().getTranslateX());
+		line.setEndY(dest.getCircle().getCenterY()+dest.getCircle().getTranslateY());
+		Transition T=new Transition(src,dest,line);
+		if(oneTransition(T)){
+			state.addTransition(T);
+			if(canvas.getChildren().contains(line))
+				canvas.getChildren().remove(line);
+			canvas.getChildren().add(line);
+		}
+	}
+	
+	/**
+	 * Vérifie s'il y a une ou plusieurs transitions sur un même port après l'ajout d'une transition.
+	 * @param trans La transition à ajouter.
+	 * @return True s'il n'y a qu'une transition venant ou allant d'un port, false sinon.
+	 */
+	public boolean oneTransition(Transition trans){
+		for(DevsState state : states){
+			for(Transition transition : state.getTransitions()){
+				if(isSrcOrDest(trans,transition))
+					return false;
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Le test nécessaire pour déterminer la présence d'une transition venant de ou allant vers un port.
+	 * @param trans La transition à ajouter.
+	 * @param transition Une transition existante.
+	 * @return True si un des ports utilisé par la transition à ajouter est déjà utilisé par l'autre transition. 
+	 */
+	public boolean isSrcOrDest(Transition trans,Transition transition){
+		return trans.getSrc().equals(transition.getSrc()) || trans.getDest().equals(transition.getDest()) ||
+		trans.getSrc().equals(transition.getDest()) || trans.getDest().equals(transition.getSrc());
 	}
 	
 	/**
@@ -231,9 +284,17 @@ public class MainGui extends Application{
 	 * @param state L'état concerné.
 	 */
 	public void drawPorts(DevsState state){
+		drawInPorts(state);
+		drawOutPorts(state);
+	}
+	
+	/**
+	 * Dessine les ports d'entrée sur un état donné.
+	 * @param state L'état concerné.
+	 */
+	public void drawInPorts(DevsState state){
 		StateRect rect = state.getRect();
 		Set<Port> inputPorts=state.getInputPorts();
-		Set<Port> outputPorts=state.getOutputPorts();
 		double step = rect.getStateHeight()/(inputPorts.size()+1);
 		int inc=1;
 		Circle circle;
@@ -242,18 +303,35 @@ public class MainGui extends Application{
 			circle.setCenterX(rect.getX());
 			circle.setCenterY(rect.getY()+step*inc);
 			canvas.getChildren().add(circle);
+			p.getName().setX(circle.getCenterX()-(circle.getRadius()+p.getName().getBoundsInLocal().getWidth()));
+			p.getName().setY(circle.getCenterY()-circle.getRadius());
+			canvas.getChildren().add(p.getName());
 			inc++;
 		}
-		inc=1;
-		step=rect.getStateHeight()/(outputPorts.size()+1);
+	}
+		
+	/**
+	 * Dessine les ports de sortie sur un état donné.
+	 * @param state L'état concerné.
+	 */
+	public void drawOutPorts(DevsState state){
+		StateRect rect = state.getRect();
+		Set<Port> outputPorts=state.getOutputPorts();
+		double step=rect.getStateHeight()/(outputPorts.size()+1);
+		int inc=1;
+		Circle circle;
 		for(Port p : outputPorts){
 			circle=p.getCircle();
 			circle.setCenterX(rect.getX()+rect.getStateWidth());
 			circle.setCenterY(rect.getY()+step*inc);
 			canvas.getChildren().add(circle);
+			p.getName().setX(circle.getCenterX()+(circle.getRadius()));
+			p.getName().setY(circle.getCenterY()-circle.getRadius());
+			canvas.getChildren().add(p.getName());
 			inc++;
 		}
 	}
+	
 	
 	/**
 	 * Efface les ports d'un état.
@@ -261,8 +339,68 @@ public class MainGui extends Application{
 	 */
 	public void removePorts(DevsState state){
 		for(Port p : state.getPorts()){
-			if(canvas.getChildren().contains(p.getCircle()))
+			if(canvas.getChildren().contains(p.getCircle())){
 				canvas.getChildren().remove(p.getCircle());
+				canvas.getChildren().remove(p.getName());
+				removeTransitions(p);
+			}
+		}
+	}
+	
+	/*public void removePorts(DevsState state, Set<Port> changedPorts){
+		for(Port p : state.getPorts()){
+			if(canvas.getChildren().contains(p.getCircle())){
+				canvas.getChildren().remove(p.getCircle());
+				canvas.getChildren().remove(p.getName());
+				removeTransitions(p);
+			}
+		}
+	}*/
+	
+	/**
+	 * Efface les ports d'un état.
+	 * @param state L'état concerné.
+	 */
+	public void removeInPorts(DevsState state){
+		for(Port p : state.getInputPorts()){
+			if(canvas.getChildren().contains(p.getCircle())){
+				canvas.getChildren().remove(p.getCircle());
+				canvas.getChildren().remove(p.getName());
+				removeTransitions(p);
+			}
+		}
+	}
+	
+	/**
+	 * Efface les ports d'un état.
+	 * @param state L'état concerné.
+	 */
+	public void removeOutPorts(DevsState state){
+		for(Port p : state.getOutputPorts()){
+			if(canvas.getChildren().contains(p.getCircle())){
+				canvas.getChildren().remove(p.getCircle());
+				canvas.getChildren().remove(p.getName());
+				removeTransitions(p);
+			}
+		}
+	}
+	
+	
+	/**
+	 * Efface toutes les transitions concernant un port donné.
+	 * @param p Le port concerné.
+	 */
+	public void removeTransitions(Port p){
+		Set<Transition> pendingTransitions;
+		for(DevsState state : states){
+			pendingTransitions=new LinkedHashSet<>();
+			for(Transition transition : state.getTransitions()){
+				if(transition.getSrc().equals(p) || transition.getDest().equals(p)){
+					canvas.getChildren().remove(transition.getLine());
+					pendingTransitions.add(transition);
+				}
+			}
+			state.getTransitions().removeAll(pendingTransitions);
 		}
 	}
 	
@@ -275,6 +413,8 @@ public class MainGui extends Application{
 		for(Port p : state.getPorts()){
 			p.getCircle().setTranslateX(rect.getTrueX()-rect.getX());
 			p.getCircle().setTranslateY(rect.getTrueY()-rect.getY());
+			p.getName().setTranslateX(rect.getTrueX()-rect.getX());
+			p.getName().setTranslateY(rect.getTrueY()-rect.getY());
 		}
 	}
 	
@@ -283,54 +423,7 @@ public class MainGui extends Application{
 	 */
 	public void setDragAndDropAll(){
 		for(DevsState state : states){
-			StateRect rect = state.getRect();
-			rect.setOnMouseDragged(e->{
-				double offsetX = e.getSceneX() - originX;
-				double offsetY = e.getSceneY() - originY;
-				double newTranslateX = originTranslateX + offsetX;
-				double newTranslateY = originTranslateY + offsetY;
-				 
-				rect.setTranslateX(newTranslateX);
-				rect.setTranslateY(newTranslateY);
-				rect.setTrueX(rect.getX()+rect.getTranslateX());
-				rect.setTrueY(rect.getY()+rect.getTranslateY());
-				
-				state.getName().setTranslateX(newTranslateX);
-				state.getName().setTranslateY(newTranslateY);
-				
-				for(Port p : state.getPorts()){
-					p.getCircle().setTranslateX(newTranslateX);
-					p.getCircle().setTranslateY(newTranslateY);
-				}
-
-				for(Transition transition : state.getTransitions()){
-					Point2D P = getJoin(rect,transition.getDest().getRect());
-					Point2D P1 = getJoin(transition.getDest().getRect(),rect);
-					transition.getLine().setStartX(P.getX());
-					transition.getLine().setStartY(P.getY());
-					transition.getLine().setEndX(P1.getX());
-					transition.getLine().setEndY(P1.getY());
-				}
-				
-				for(DevsState src : states){
-					for(Transition transition : src.getTransitions())
-						if(transition.getDest().equals(state)){
-							Point2D P = getJoin(rect,src.getRect());
-							Point2D P1 = getJoin(src.getRect(),rect);
-							transition.getLine().setStartX(P1.getX());
-							transition.getLine().setStartY(P1.getY());
-							transition.getLine().setEndX(P.getX());
-							transition.getLine().setEndY(P.getY());
-						}							
-				}
-			});
-			
-			rect.setOnMousePressed(e->{
-					originX=e.getSceneX();
-					originY=e.getSceneY();
-					originTranslateX = rect.getTranslateX();
-					originTranslateY = rect.getTranslateY();
-			});
+			setDragAndDrop(state);
 		}
 	}
 	
@@ -357,21 +450,20 @@ public class MainGui extends Application{
 			for(Port p : state.getPorts()){
 				p.getCircle().setTranslateX(newTranslateX);
 				p.getCircle().setTranslateY(newTranslateY);
-			}
-			
-			for(Transition transition : state.getTransitions()){
-				Point2D P = getJoin(rect,transition.getDest().getRect());
-				transition.getLine().setStartX(P.getX());
-				transition.getLine().setStartY(P.getY());
-			}
-			
-			for(DevsState src : states){
-				for(Transition transition : src.getTransitions())
-					if(transition.getDest().equals(state)){
-						Point2D P = getJoin(rect,src.getRect());
-						transition.getLine().setEndX(P.getX());
-						transition.getLine().setEndY(P.getY());
-					}							
+				p.getName().setTranslateX(newTranslateX);
+				p.getName().setTranslateY(newTranslateY);
+				for(DevsState s : states){
+					for(Transition transition : s.getTransitions()){
+						if(p.equals(transition.getSrc())){
+							transition.getLine().setStartX(transition.getSrc().getCircle().getCenterX()+transition.getSrc().getCircle().getTranslateX());
+							transition.getLine().setStartY(transition.getSrc().getCircle().getCenterY()+transition.getSrc().getCircle().getTranslateY());
+						}
+						else{
+							transition.getLine().setEndX(transition.getDest().getCircle().getCenterX()+transition.getDest().getCircle().getTranslateX());
+							transition.getLine().setEndY(transition.getDest().getCircle().getCenterY()+transition.getDest().getCircle().getTranslateY());
+						}
+					}
+				}
 			}
 		});
 		

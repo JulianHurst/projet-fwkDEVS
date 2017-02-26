@@ -12,7 +12,7 @@ public class Transition {
 	/**
 	 * Les états de source et de destination.
 	 */
-	private DevsState src,dest;
+	private Port src,dest;
 	/**
 	 * L'évènement associé à la transition.
 	 */
@@ -26,7 +26,7 @@ public class Transition {
 	 */
 	private Line line;
 	
-	public Transition(DevsState src,DevsState dest,Line line){
+	public Transition(Port src,Port dest,Line line){
 		this.src=src;
 		this.dest=dest;
 		this.line=line;
@@ -55,19 +55,19 @@ public class Transition {
 	}
 
 
-	public DevsState getSrc() {
+	public Port getSrc() {
 		return src;
 	}
 
-	public void setSrc(DevsState src) {
+	public void setSrc(Port src) {
 		this.src = src;
 	}
 
-	public DevsState getDest() {
+	public Port getDest() {
 		return dest;
 	}
 
-	public void setDest(DevsState dest) {
+	public void setDest(Port dest) {
 		this.dest = dest;
 	}
 
@@ -77,6 +77,10 @@ public class Transition {
 
 	public void setLine(Line line) {
 		this.line = line;
+	}
+	
+	public String toString(){
+		return "src : "+src.toString()+" dest : "+dest.toString();
 	}
 	
 }

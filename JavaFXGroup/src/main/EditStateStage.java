@@ -19,6 +19,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import util.Util;
 
 /**
  * Fournit une fenêtre pour la modification d'un état.
@@ -81,9 +82,30 @@ public class EditStateStage extends Stage{
 					for(int i=0;i<spOut.getValue();i++){
 						newPorts.add(new Port("out"+i,Port.Type.OUTPUT));
 					}
-					main.removePorts(state);
+					int inSize=state.getInputPorts().size();
+					int outSize=state.getOutputPorts().size();
+
+					Set<Port> changedPorts=new LinkedHashSet<>();
+					for(Port port : state.getPorts()){
+						if(!Util.includes(newPorts, port))
+							changedPorts.add(port);
+					}
+					
+					//main.removePorts(state,changedPorts);
+					
+					if(spIn.getValue()!=inSize){
+						main.removeInPorts(state);
+						state.updateInPorts(newPorts);
+						main.drawInPorts(state);
+					}
+					if(spOut.getValue()!=outSize){
+						main.removeOutPorts(state);
+						state.updateOutPorts(newPorts);
+						main.drawOutPorts(state);
+					}
+					/*main.removePorts(state);
 					state.setPorts(newPorts);
-					main.drawPorts(state);
+					main.drawPorts(state);*/
 					main.updatePortTranslations(state);
 					close();
 				});

@@ -1,5 +1,6 @@
 package main;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -23,6 +24,7 @@ import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import util.Util;
 
 public class MainGui extends Application{
 	/**
@@ -521,5 +523,18 @@ public class MainGui extends Application{
 	 */
 	public static void main(String[] args){
 		launch(args);
+	
+		//Test de getAtomicModelPorts
+		/*Set<Port> port;
+		try {
+			port = Util.getAtomicModelPorts("And");
+			for(Port p : port)
+				System.out.println(p.toString());
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException | NoSuchMethodException | SecurityException
+				| ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
 	}
 }

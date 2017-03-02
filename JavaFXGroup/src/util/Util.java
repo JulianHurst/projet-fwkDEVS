@@ -1,7 +1,10 @@
 package util;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import DEVSModel.DEVSAtomic;
@@ -58,6 +61,18 @@ public final class Util {
 		for(DEVSModel.Port P : a.outPorts){
 			result.add(new Port(P.getName(),Port.Type.OUTPUT));
 		}
+		return result;
+	}
+	
+	/**
+	 * Récupère les noms de tous les modèles atomiques (contenus dans le package models).
+	 * @return Une liste des noms des classes.
+	 */
+	public static List<String> getAtomicModelNames(){
+		List<String> result = new ArrayList<>();
+		File pack = new File(System.getProperty("user.dir")+"/src/models");
+		for(String file : pack.list())
+			result.add(file.replace(".java", ""));
 		return result;
 	}
 	

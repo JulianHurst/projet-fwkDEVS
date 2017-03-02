@@ -11,17 +11,23 @@ import devs.Transition;
 import javafx.application.Application;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
+import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.ToolBar;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
+import javafx.scene.transform.Scale;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import util.Util;
@@ -46,7 +52,7 @@ public class MainGui extends Application{
 	/**
 	 * Les actions possibles
 	 */
-	private enum Action{RECT,LINE,NONE};
+	private enum Action{RECT,LINE,MODEL,NONE};
 	/**
 	 * L'action active.
 	 */
@@ -64,20 +70,48 @@ public class MainGui extends Application{
 	 */
 	private double originX,originY,originTranslateX,originTranslateY;
 	/**
+	 * Le nom du modèle atomique à dessiner.
+	 */
+	private String modelName;
+	/**
+	 * Le scale qui permet de zoomer sur le canvas.
+	 */
+	private Scale zoomer;
+	ListView<String> models;
+	/**
 	 * Initialisation et lancement de l'interface
 	 * @param primaryStage La fenêtre principale
 	 */
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		VBox root = new VBox();	
-		Button rectButton,lineButton,cleanButton;
+		Button rectButton,lineButton,cleanButton,zoomButton,unzoomButton,reloadButton;
 		
 		//Permet de dessiner des rectangles
 		rectButton=new Button("Rect");
 		//Permet de dessiner des liens entre rectangles
 		lineButton=new Button("Line");
 		//Permet d'effacer tout (rectangles et liens)
-		cleanButton=new Button("Clean");
+		cleanButton=new Button("Clear");
+		
+		zoomButton=new Button("Zoom in");
+		unzoomButton=new Button("Zoom out");
+		
+		reloadButton=new Button("Reload models");
+
+		zoomButton.setOnAction(e->{
+			if(zoomer.getX()<50){
+				zoomer.setX(zoomer.getX()+0.5);
+				zoomer.setY(zoomer.getY()+0.5);
+			}
+		});
+		
+		unzoomButton.setOnAction(e->{
+			if(zoomer.getX()>1){
+				zoomer.setX(zoomer.getX()-0.5);
+				zoomer.setY(zoomer.getY()-0.5);
+			}
+		});
 		
 		rectButton.setOnAction(e->{
 			src=null;
@@ -88,33 +122,34 @@ public class MainGui extends Application{
 			for(DevsState state : states)
 				for(Port p : state.getPorts())
 					p.getCircle().setOnMousePressed(event->{});
-			setDragAndDropAll();
 		});
 		
 		lineButton.setOnAction(e->{
 			currentAction=Action.LINE;
-			for(StateRect rect : rectangles){
+			/*for(StateRect rect : rectangles){
 				rect.setOnMousePressed(event->{});
 				rect.setOnMouseDragged(event->{});
 				
-			}
+			}*/
 			for(DevsState state : states){
 				for(Port p : state.getPorts()){
 					Circle c=p.getCircle();
 					c.setOnMousePressed(event->{
-						if(src==null){
-							src=state;
-							srcPort=p;
-							c.setStroke(Color.RED);
-						}
-						else if(!state.equals(src) && !srcPort.getType().equals(p.getType())){
-							if(srcPort.getType().equals(Port.Type.INPUT)){
-								drawLine(src,srcPort,p);
+						if(event.getButton().equals(MouseButton.PRIMARY)){
+							if(src==null){
+								src=state;
+								srcPort=p;
+								c.setStroke(Color.RED);
 							}
-							else
-								drawLine(state,p,srcPort);
-							srcPort.getCircle().setStroke(Color.BLACK);
-							src=null;
+							else if(!state.equals(src) && !srcPort.getType().equals(p.getType())){
+								if(srcPort.getType().equals(Port.Type.INPUT)){
+									drawLine(src,srcPort,p);
+								}
+								else
+									drawLine(state,p,srcPort);
+								srcPort.getCircle().setStroke(Color.BLACK);
+								src=null;
+							}
 						}
 					});
 				}
@@ -130,47 +165,102 @@ public class MainGui extends Application{
 			src=null;
 		});
 		
+		reloadButton.setOnAction(e->{
+			reloadModels();
+		});
+		
 		
 		double sceneWidth=Screen.getPrimary().getVisualBounds().getWidth();
-		Rectangle R = new Rectangle(0,0,sceneWidth,800);
+		double sceneHeight=Screen.getPrimary().getVisualBounds().getHeight();
+		Rectangle R = new Rectangle(0,0,sceneWidth,sceneHeight);
 		R.setFill(Color.WHITE);
 		canvas.getChildren().add(R);
 		canvas.setOnMousePressed(e->{
-			switch(currentAction){
-				case RECT:
-					boolean superimposed=false;
-					for(StateRect rect : rectangles){
-						if(e.getX()>=rect.getTrueX() && e.getX()<=rect.getTrueX()+rect.getStateWidth() &&
-								e.getY()>=rect.getTrueY() && e.getY()<=rect.getTrueY()+rect.getStateHeight())
-							superimposed=true;
-					}
-					if(!superimposed)
-						drawRect(e.getX(),e.getY());
-					break;
-				case LINE:
-					break;
-				default:
-			}
-				
+			if(e.getButton().equals(MouseButton.PRIMARY)){
+				boolean superimposed=false;
+				switch(currentAction){
+					case RECT:
+						for(StateRect rect : rectangles){
+							if(e.getX()>=rect.getTrueX() && e.getX()<=rect.getTrueX()+rect.getStateWidth() &&
+									e.getY()>=rect.getTrueY() && e.getY()<=rect.getTrueY()+rect.getStateHeight())
+								superimposed=true;
+						}
+						if(!superimposed)
+							drawRect(e.getX(),e.getY(),"état");
+						break;
+					case LINE:
+						break;
+					case MODEL:
+						superimposed=false;
+						for(StateRect rect : rectangles){
+							if(e.getX()>=rect.getTrueX() && e.getX()<=rect.getTrueX()+rect.getStateWidth() &&
+									e.getY()>=rect.getTrueY() && e.getY()<=rect.getTrueY()+rect.getStateHeight())
+								superimposed=true;
+						}
+						if(!superimposed)
+							drawRect(e.getX(),e.getY(),modelName);
+						break;
+					default:
+				}
+			}	
 		});
 		
 		ToolBar toolBar = new ToolBar(
 				new Button("Run"),
 				new Button("Compile"),
 				new Button("Save"),
+				new Separator(Orientation.VERTICAL),
 				rectButton,
 				lineButton,
 				new Separator(Orientation.VERTICAL),
 				cleanButton,
 				new Separator(Orientation.VERTICAL),
-				new Button("Debug"),
-				new Button("Profile")
+				zoomButton,
+				unzoomButton,
+				new Separator(Orientation.VERTICAL),
+				reloadButton
 		);
 		s = new Scene(root, 1200, 600, Color.BLACK);
+
+		models = new ListView<>();
+		models.getItems().addAll(Util.getAtomicModelNames());
+		
+		//Ajoute la création de modèles atomiques avec leurs ports.
+		models.setOnMouseClicked(e->{
+			src=null;
+			if(srcPort!=null)
+				srcPort.getCircle().setStroke(Color.BLACK);
+			currentAction=Action.MODEL;
+			for(DevsState state : states)
+				for(Port p : state.getPorts())
+					p.getCircle().setOnMousePressed(event->{});
+			modelName=models.getSelectionModel().getSelectedItem().toString();
+		});
+		
+		Text modelTitle = new Text("Models");
+		VBox titleBox = new VBox();
+		titleBox.getChildren().add(modelTitle);
+		titleBox.setAlignment(Pos.CENTER);
+
+		VBox modelBox = new VBox();
+		modelBox.getChildren().addAll(titleBox,models);
+		modelBox.setMaxWidth(300);
+		
+		Group container = new Group();
+		container.getChildren().add(canvas);
+
 		ScrollPane scroller = new ScrollPane();
-		scroller.setContent(canvas);
+		scroller.setContent(container);
+
+		zoomer = new Scale(1,1,0,0);
+		canvas.getTransforms().add(zoomer);
+		
+		SplitPane split = new SplitPane();
+		split.setOrientation(Orientation.HORIZONTAL);
+		split.getItems().addAll(modelBox,scroller);
+
 		root.getChildren().add(toolBar);
-		root.getChildren().add(scroller);
+		root.getChildren().add(split);
 		primaryStage.setTitle("fwkDEVS");
 		primaryStage.setScene(s);
 		primaryStage.setResizable(true);
@@ -181,8 +271,9 @@ public class MainGui extends Application{
 	 * Dessine un rectangle sur le Group.
 	 * @param x La position abscisse où dessiner le rectangle.
 	 * @param y La position ordonnée où dessiner le rectangle.
+	 * @param name Le nom du modèle atomique.
 	 */
-	public void drawRect(double x,double y){
+	public void drawRect(double x,double y,String name){
 		StateRect rect = new StateRect();
 		rect.setX(x);
 		rect.setY(y);
@@ -190,7 +281,13 @@ public class MainGui extends Application{
 		rect.setFill(Color.WHITE);
 		rect.setTrueX(rect.getX());
 		rect.setTrueY(rect.getY());
-		DevsState Drect=new DevsState("état",rect);
+		DevsState Drect=new DevsState(name,rect);
+		try {
+			Drect.setPorts(Util.getAtomicModelPorts(modelName));
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
 		setDragAndDrop(Drect);
 		setEditState(Drect);
 		rectangles.add(rect);
@@ -200,6 +297,14 @@ public class MainGui extends Application{
 		//Dessine le nom de l'état au centre du rectangle
 		drawName(Drect);
 		drawPorts(Drect);
+	}
+	
+	/**
+	 * Rafraichit la liste des modèles atomiques en cas de rajout/suppression de modèles.
+	 */
+	public void reloadModels(){
+		models.getItems().clear();
+		models.getItems().addAll(Util.getAtomicModelNames());
 	}
 	
 	/**
@@ -470,10 +575,19 @@ public class MainGui extends Application{
 		});
 		
 		rect.setOnMousePressed(e->{
+			if(e.getButton()==MouseButton.SECONDARY){
+				canvas.getChildren().remove(rect);
+				canvas.getChildren().remove(state.getName());
+				removePorts(state);
+				rectangles.remove(rect);
+				states.remove(state);
+			}
+			else{
 				originX=e.getSceneX();
 				originY=e.getSceneY();
 				originTranslateX = rect.getTranslateX();
 				originTranslateY = rect.getTranslateY();
+			}
 		});
 	}
 	

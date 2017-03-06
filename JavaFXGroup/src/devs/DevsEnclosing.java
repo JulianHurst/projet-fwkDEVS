@@ -20,12 +20,12 @@ public class DevsEnclosing extends DevsObject {
 		shape.setStroke(Color.BLACK);
 		type=T;
 		if(type.equals(Type.GEN)){
-			ports.add(new Port("out",Port.Type.OUTPUT));
+			ports.add(new Port(this,"out",Port.Type.OUTPUT));
 			name.setText("Gen"+GEN_QUANTITY);
 			GEN_QUANTITY++;
 		}
 		else{
-			ports.add(new Port("in",Port.Type.INPUT));
+			ports.add(new Port(this,"in",Port.Type.INPUT));
 			name.setText("Trans"+TRANS_QUANTITY);
 			TRANS_QUANTITY++;
 		}
@@ -38,5 +38,15 @@ public class DevsEnclosing extends DevsObject {
 		else
 			return false;
 	}
+
+	public Type getType() {
+		return type;
+	}
+
+	public void setType(Type type) {
+		this.type = type;
+	}
+
+	
 	
 }

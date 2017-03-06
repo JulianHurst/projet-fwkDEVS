@@ -28,8 +28,10 @@ public class Port {
 	 * Le cercle qui représente le port graphiquement.
 	 */
 	private Circle circle;
+	private DevsObject parent;
 
-	public Port(String name,Type type){
+	public Port(DevsObject parent,String name,Type type){
+		this.parent=parent;
 		this.name=new Text(name);
 		this.type=type;
 		circle=new Circle(10.0f);
@@ -64,5 +66,15 @@ public class Port {
 	public String toString(){
 		return "name : "+name.getText()+" type : "+type;
 	}
+
+	public DevsObject getParent() {
+		return parent;
+	}
+
+	public void setParent(DevsObject parent) {
+		this.parent = parent;
+	}
+	
+	
 	
 }

@@ -23,8 +23,8 @@ public class DevsState extends DevsObject{
 		this.shape=rect;
 		transitions=new LinkedHashSet<>();
 		ports=new LinkedHashSet<>();
-		ports.add(new Port("in0",Port.Type.INPUT));
-		ports.add(new Port("out0",Port.Type.OUTPUT));
+		ports.add(new Port(this,"in0",Port.Type.INPUT));
+		ports.add(new Port(this,"out0",Port.Type.OUTPUT));
 	}
 
 	/**

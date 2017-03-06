@@ -3,11 +3,15 @@ package util;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import DEVSModel.DEVSAtomic;
+import devs.DevsEnclosing;
+import devs.DevsObject;
+import devs.DevsState;
 import devs.Port;
 
 public final class Util {
@@ -51,15 +55,15 @@ public final class Util {
 	 * @throws SecurityException Lancée si la sécurité est violée (private).
 	 * @throws ClassNotFoundException Lancée si la classe demandée n'est pas trouvée.
 	 */
-	public static Set<Port> getAtomicModelPorts(String model) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException{ 
+	public static Set<Port> getAtomicModelPorts(DevsObject parent, String model) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException{ 
 		Set<Port> result=new LinkedHashSet<>();
 		Object thing=Class.forName("models."+model).getDeclaredConstructor(String.class).newInstance(model);
 		DEVSAtomic a = (DEVSAtomic)thing;
 		for(DEVSModel.Port P : a.inPorts){
-			result.add(new Port(P.getName(),Port.Type.INPUT));
+			result.add(new Port(parent,P.getName(),Port.Type.INPUT));
 		}
 		for(DEVSModel.Port P : a.outPorts){
-			result.add(new Port(P.getName(),Port.Type.OUTPUT));
+			result.add(new Port(parent,P.getName(),Port.Type.OUTPUT));
 		}
 		return result;
 	}
@@ -74,6 +78,59 @@ public final class Util {
 		for(String file : pack.list())
 			result.add(file.replace(".java", ""));
 		return result;
+	}
+
+	/**
+	 * Récupère les générateurs et/ou transducers contenus dans un ensemble de DevsObjects.
+	 * @param objects L'ensemble d'objets. 
+	 * @return L'ensemble des générateurs et/ou transducers.
+	 */
+	public static Set<DevsEnclosing> getEnclosing(Set<DevsObject> objects){
+		Set<DevsEnclosing> result=new LinkedHashSet<>();
+		for(DevsObject obj : objects){
+			if(obj.getClass().equals(DevsEnclosing.class))
+			result.add((DevsEnclosing)obj);
+		}
+		return result;
+	}
+	
+	/**
+	 * Récupère les modèles atomiques contenus dans un ensemble d'objets.
+	 * @param objects L'ensemble d'objets.
+	 * @return L'ensemble des modèles atomiques.
+	 */
+	public static Set<DevsState> getModels(Set<DevsObject> objects){
+		Set<DevsState> result=new LinkedHashSet<>();
+		for(DevsObject obj : objects){
+			if(obj.getClass().equals(DevsState.class))
+			result.add((DevsState)obj);
+		}
+		return result;
+	}
+	
+	/**
+	 * Récupère le numéro du port spécifié pour un objet contenu dans un ensemble d'objets spécifié.
+	 * @param p Le port.
+	 * @param objects L'ensemble d'objets.
+	 * @return Le numéro du port s'il est trouvé, -1 sinon.
+	 */
+	public static int findPortId(Port p,Set<DevsObject> objects){
+		int result=0;
+		for(DevsObject obj : objects){
+			Set<Port> ports;
+			if(p.getType().equals(Port.Type.INPUT))
+				ports=obj.getInputPorts();
+			else
+				ports=obj.getOutputPorts();
+			Iterator<Port> it = ports.iterator();
+			while(it.hasNext()){
+				if(p.equals(it.next()))
+					return result;
+				result++;
+			}
+			result=0;
+		}
+		return -1;
 	}
 	
 }

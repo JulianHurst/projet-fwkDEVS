@@ -1,9 +1,14 @@
 package main;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 
+import com.sun.codemodel.JClassAlreadyExistsException;
+
+import codegen.CodeGenerator;
 import devs.DevsEnclosing;
 import devs.DevsObject;
 import devs.DevsState;
@@ -21,6 +26,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToolBar;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.VBox;
@@ -84,7 +90,7 @@ public class MainGui extends Application{
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		VBox root = new VBox();	
-		Button rectButton,lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton;
+		Button rectButton,lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton,generateButton;
 		
 		//Permet de dessiner des rectangles
 		rectButton=new Button("Rect");
@@ -96,6 +102,7 @@ public class MainGui extends Application{
 		lineButton=new Button("Line");
 		//Permet d'effacer tout (rectangles et liens)
 		cleanButton=new Button("Clear");
+		generateButton=new Button("Generate");
 		
 		zoomButton=new Button("Zoom in");
 		unzoomButton=new Button("Zoom out");
@@ -147,6 +154,29 @@ public class MainGui extends Application{
 					p.getCircle().setOnMousePressed(event->{});
 			
 		});
+
+		generateButton.setOnAction(e->{
+			TextInputDialog dialog = new TextInputDialog();
+			dialog.setTitle("Couple name");
+			dialog.setHeaderText("Couple name");
+			dialog.setContentText("Choose a name for the couple :");
+			Optional<String> result=dialog.showAndWait();
+			result.ifPresent(name->{
+				CodeGenerator C = new CodeGenerator();
+				try {
+					C.generateCouple(name, states);
+				} catch (JClassAlreadyExistsException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (ClassNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			});
+		});
 		
 		lineButton.setOnAction(e->{
 			currentAction=Action.LINE;
@@ -162,10 +192,10 @@ public class MainGui extends Application{
 							}
 							else if(!state.equals(src) && !srcPort.getType().equals(p.getType())){
 								if(srcPort.getType().equals(Port.Type.INPUT)){
-									drawLine(src,srcPort,p);
+									drawLine(state,p,srcPort);
 								}
 								else
-									drawLine(state,p,srcPort);
+									drawLine(src,srcPort,p);
 								srcPort.getCircle().setStroke(Color.BLACK);
 								src=null;
 							}
@@ -181,6 +211,8 @@ public class MainGui extends Application{
 			canvas.getChildren().remove(1, canvas.getChildren().size());
 			states.clear();
 			src=null;
+			DevsEnclosing.GEN_QUANTITY=0;
+			DevsEnclosing.TRANS_QUANTITY=0;
 		});
 		
 		reloadButton.setOnAction(e->{
@@ -217,8 +249,14 @@ public class MainGui extends Application{
 									e.getY()>=rect.getBoundsInParent().getMinY() && e.getY()<=rect.getBoundsInParent().getMinY()+rect.getBoundsInLocal().getHeight())
 								superimposed=true;
 						}
-						if(!superimposed)
-							drawRect(e.getX(),e.getY(),modelName);
+						if(!superimposed){
+							int inc=0;
+							for(DevsObject obj : states){
+								if(obj.getName().getText().matches(modelName+"[0-9]+"))
+									inc++;
+							}
+							drawRect(e.getX(),e.getY(),modelName+inc);
+						}
 						break;
 					case GEN:
 						superimposed=false;
@@ -262,7 +300,8 @@ public class MainGui extends Application{
 				zoomButton,
 				unzoomButton,
 				new Separator(Orientation.VERTICAL),
-				reloadButton
+				reloadButton,
+				generateButton
 		);
 		s = new Scene(root, 1200, 600, Color.BLACK);
 
@@ -323,7 +362,7 @@ public class MainGui extends Application{
 		rect.setY(y);
 		DevsState Drect=new DevsState(name,rect);
 		try {
-			Drect.setPorts(Util.getAtomicModelPorts(modelName));
+			Drect.setPorts(Util.getAtomicModelPorts(Drect,modelName));
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException | ClassNotFoundException e) {
 			e.printStackTrace();

@@ -77,10 +77,10 @@ public class EditStateStage extends Stage{
 					main.drawName(state);
 					Set<Port> newPorts=new LinkedHashSet<>();
 					for(int i=0;i<spIn.getValue();i++){
-						newPorts.add(new Port("in"+i,Port.Type.INPUT));
+						newPorts.add(new Port(state,"in"+i,Port.Type.INPUT));
 					}
 					for(int i=0;i<spOut.getValue();i++){
-						newPorts.add(new Port("out"+i,Port.Type.OUTPUT));
+						newPorts.add(new Port(state,"out"+i,Port.Type.OUTPUT));
 					}
 					int inSize=state.getInputPorts().size();
 					int outSize=state.getOutputPorts().size();

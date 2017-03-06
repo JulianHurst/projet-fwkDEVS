@@ -11,23 +11,7 @@ import javafx.scene.text.Text;
  * @author Julian
  *
  */
-public class DevsState{
-	/**
-	 * Le nom de l'état
-	 */
-	private Text name;
-	/**
-	 * L'ensemble des transitions sans répétitions.
-	 */
-	private Set<Transition> transitions;
-	/**
-	 * Le rectangle qui représente l'état graphiquement.
-	 */
-	private StateRect rect;
-	/**
-	 * Les ports d'entrée et de sortie de l'état.
-	 */
-	private Set<Port> ports;
+public class DevsState extends DevsObject{
 
 	/**
 	 * Constructeur d'un état
@@ -36,7 +20,7 @@ public class DevsState{
 	 */
 	public DevsState(String name,StateRect rect){
 		this.name=new Text(name);
-		this.rect=rect;
+		this.shape=rect;
 		transitions=new LinkedHashSet<>();
 		ports=new LinkedHashSet<>();
 		ports.add(new Port("in0",Port.Type.INPUT));
@@ -58,33 +42,6 @@ public class DevsState{
 		return transitions.add(transition);
 	}
 	
-	public Text getName() {
-		return name;
-	}
-
-	public void setName(Text name) {
-		this.name = name;
-	}
-	
-	public void setName(String name){
-		this.name.setText(name);
-	}
-
-	public StateRect getRect() {
-		return rect;
-	}
-
-	public void setRect(StateRect rect) {
-		this.rect = rect;
-	}
-
-	public Set<Transition> getTransitions() {
-		return transitions;
-	}
-
-	public void setTransitions(Set<Transition> transitions) {
-		this.transitions = transitions;
-	}
 
 	/**
 	 * Ajoute un port si il n'existe pas déjà pour cet état.
@@ -103,37 +60,7 @@ public class DevsState{
 		return ports;
 	}
 	
-	/**
-	 * Récupère les ports d'entrée.
-	 * @return Un Set contenant les ports d'entrée.
-	 */
-	public Set<Port> getInputPorts(){
-		Set<Port> inputPorts=new LinkedHashSet<>();
-		for(Port p : ports){
-			if(p.getType().equals(Port.Type.INPUT)){
-				inputPorts.add(p);
-			}
-		}
-		return inputPorts;
-	}
-
-	/**
-	 * Récupère les ports de sortie.
-	 * @return Un Set contenant les ports de sortie.
-	 */
-	public Set<Port> getOutputPorts(){
-		Set<Port> outputPorts=new LinkedHashSet<>();
-		for(Port p : ports){
-			if(p.getType().equals(Port.Type.OUTPUT)){
-				outputPorts.add(p);
-			}
-		}
-		return outputPorts;
-	}
 	
-	public void setPorts(Set<Port> ports) {
-		this.ports = ports;
-	}
 	
 	/**
 	 * Met à jour les ports selon un autre ensemble de ports.

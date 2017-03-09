@@ -16,7 +16,7 @@ public class DevsEnclosing extends DevsObject {
 		name=new Text();
 		transitions=new LinkedHashSet<>();
 		ports=new LinkedHashSet<>();
-		shape=new Circle(50,Color.WHITE);
+		shape=new Circle(80,Color.WHITE);
 		shape.setStroke(Color.BLACK);
 		type=T;
 		if(type.equals(Type.GEN)){

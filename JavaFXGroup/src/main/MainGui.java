@@ -464,12 +464,11 @@ public class MainGui extends Application{
 		line.setEndX(dest.getCircle().getCenterX()+dest.getCircle().getTranslateX());
 		line.setEndY(dest.getCircle().getCenterY()+dest.getCircle().getTranslateY());
 		Transition T=new Transition(src,dest,line);
-		if(oneTransition(T)){
-			state.addTransition(T);
-			if(canvas.getChildren().contains(line))
-				canvas.getChildren().remove(line);
-			canvas.getChildren().add(line);
-		}
+		
+		state.addTransition(T);
+		if(canvas.getChildren().contains(line))
+			canvas.getChildren().remove(line);
+		canvas.getChildren().add(line);
 	}
 	
 	/**

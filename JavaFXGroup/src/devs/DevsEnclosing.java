@@ -16,7 +16,7 @@ public class DevsEnclosing extends DevsObject {
 		name=new Text();
 		transitions=new LinkedHashSet<>();
 		ports=new LinkedHashSet<>();
-		shape=new Circle(100,Color.WHITE);
+		shape=new Circle(50,Color.WHITE);
 		shape.setStroke(Color.BLACK);
 		type=T;
 		if(type.equals(Type.GEN)){
@@ -33,10 +33,7 @@ public class DevsEnclosing extends DevsObject {
 
 	@Override
 	public boolean addTransition(Transition transition) {
-		if(transitions.isEmpty())
-			return transitions.add(transition);
-		else
-			return false;
+		return transitions.add(transition);
 	}
 
 	public Type getType() {

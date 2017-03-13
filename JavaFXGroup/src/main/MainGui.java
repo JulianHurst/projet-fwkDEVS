@@ -170,6 +170,7 @@ public class MainGui extends Application{
 			result.ifPresent(name->{
 				CodeGenerator C = new CodeGenerator();
 				couple.setName(name);
+				setTitle(name);
 				try {
 					C.generateCouple(name, couple.getModels(),couple);
 				} catch (JClassAlreadyExistsException e1) {
@@ -750,70 +751,8 @@ public class MainGui extends Application{
 	
 	/**
 	 * Ajoute une action pour l'évènement drag and drop pour le rectangle d'un état donné.
-	 * @param state L'état sur lequel on veut ajouter l'action drag and drop.
+	 * @param state Le modèle sur lequel on veut ajouter l'action drag and drop.
 	 */
-	public void setDragAndDrop2(DevsObject state){
-		Shape rect = state.getShape();
-		rect.setOnMouseDragged(e->{
-			double offsetX = e.getSceneX() - originX;
-			double offsetY = e.getSceneY() - originY;
-			double newTranslateX = originTranslateX + offsetX;
-			double newTranslateY = originTranslateY + offsetY;
-
-			rect.setTranslateX(newTranslateX);
-			rect.setTranslateY(newTranslateY);
-
-			state.getName().setTranslateX(newTranslateX);
-			state.getName().setTranslateY(newTranslateY);
-			
-			for(Port p : state.getPorts()){
-				p.getCircle().setTranslateX(newTranslateX);
-				p.getCircle().setTranslateY(newTranslateY);
-				p.getName().setTranslateX(newTranslateX);
-				p.getName().setTranslateY(newTranslateY);
-				for(DevsObject s : couple.getModels()){
-					for(Transition transition : s.getTransitions()){
-						if(p.equals(transition.getSrc())){
-							transition.getLine().setStartX(transition.getSrc().getCircle().getCenterX()+transition.getSrc().getCircle().getTranslateX());
-							transition.getLine().setStartY(transition.getSrc().getCircle().getCenterY()+transition.getSrc().getCircle().getTranslateY());
-						}
-						else{
-							transition.getLine().setEndX(transition.getDest().getCircle().getCenterX()+transition.getDest().getCircle().getTranslateX());
-							transition.getLine().setEndY(transition.getDest().getCircle().getCenterY()+transition.getDest().getCircle().getTranslateY());
-						}
-					}
-				}
-			}
-			if(!couple.getShape().getBoundsInParent().contains(rect.getBoundsInParent())){
-				rect.setLayoutX(rect.getLayoutX()-offsetX);
-				rect.setLayoutY(rect.getLayoutX()-offsetY);
-			}
-		});
-		
-		rect.setOnMousePressed(e->{
-			if(e.getButton()==MouseButton.SECONDARY){
-				if(state.getClass().equals(DevsEnclosing.class)){
-					if(state.getName().getText().contains("Gen"))
-						DevsEnclosing.GEN_QUANTITY--;
-					else
-						DevsEnclosing.TRANS_QUANTITY--;
-				}
-				canvas.getChildren().remove(rect);
-				canvas.getChildren().remove(state.getName());
-				removePorts(state);
-				couple.getModels().remove(state);
-			}
-			else{
-				originX=e.getSceneX();
-				originY=e.getSceneY();
-				originPosX=rect.getBoundsInParent().getMinX();
-				originPosY=rect.getBoundsInParent().getMinY();
-				originTranslateX = rect.getTranslateX();
-				originTranslateY = rect.getTranslateY();
-			}
-		});
-	}
-	
 	public void setDragAndDrop(DevsObject state){
 		Shape rect = state.getShape();
 		rect.setOnMouseDragged(e->{

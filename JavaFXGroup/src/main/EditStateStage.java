@@ -92,7 +92,6 @@ public class EditStateStage extends Stage{
 							changedPorts.add(port);
 					}
 					
-					//main.removePorts(state,changedPorts);
 					
 					if(spIn.getValue()!=inSize){
 						main.removeInPorts(state);
@@ -104,9 +103,6 @@ public class EditStateStage extends Stage{
 						state.updateOutPorts(newPorts);
 						main.drawOutPorts(state);
 					}
-					/*main.removePorts(state);
-					state.setPorts(newPorts);
-					main.drawPorts(state);*/
 					main.updatePortTranslations(state);
 					close();
 				});

@@ -9,13 +9,16 @@ import java.util.Set;
 import com.sun.codemodel.JClassAlreadyExistsException;
 
 import codegen.CodeGenerator;
+import devs.DevsCouple;
 import devs.DevsEnclosing;
 import devs.DevsObject;
-import devs.DevsState;
+import devs.DevsModel;
 import devs.Port;
 import devs.StateRect;
 import devs.Transition;
 import javafx.application.Application;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
@@ -45,7 +48,7 @@ public class MainGui extends Application{
 	/**
 	 * L'ensemble des états.
 	 */
-	private LinkedHashSet<DevsObject> states = new LinkedHashSet<>();
+	//private LinkedHashSet<DevsObject> couple.getModels() = new LinkedHashSet<>();
 	/**
 	 * Le group auquel on ajoute les objets à dessiner.
 	 */
@@ -54,6 +57,8 @@ public class MainGui extends Application{
 	 * La scène principale.
 	 */
 	private Scene s;
+	private Stage primaryStage;
+	private DevsCouple couple;
 	/**
 	 * Les actions possibles
 	 */
@@ -73,7 +78,7 @@ public class MainGui extends Application{
 	/**
 	 * Les coordonnées nécessaires pour la mise à jour de la position lors du drag and drop.
 	 */
-	private double originX,originY,originTranslateX,originTranslateY;
+	private double originX,originY,originTranslateX,originTranslateY,originPosX,originPosY;
 	/**
 	 * Le nom du modèle atomique à dessiner.
 	 */
@@ -83,6 +88,7 @@ public class MainGui extends Application{
 	 */
 	private Scale zoomer;
 	private ListView<String> modelsList;
+	final ObjectProperty<Point2D> mousePosition = new SimpleObjectProperty<>();
 	/**
 	 * Initialisation et lancement de l'interface
 	 * @param primaryStage La fenêtre principale
@@ -128,7 +134,7 @@ public class MainGui extends Application{
 			if(srcPort!=null)
 				srcPort.getCircle().setStroke(Color.BLACK);
 			currentAction=Action.RECT;
-			for(DevsObject state : states)
+			for(DevsObject state : couple.getModels())
 				for(Port p : state.getPorts())
 					p.getCircle().setOnMousePressed(event->{});
 		});
@@ -138,7 +144,7 @@ public class MainGui extends Application{
 			if(srcPort!=null)
 				srcPort.getCircle().setStroke(Color.BLACK);
 			currentAction=Action.GEN;
-			for(DevsObject state : states)
+			for(DevsObject state : couple.getModels())
 				for(Port p : state.getPorts())
 					p.getCircle().setOnMousePressed(event->{});
 			
@@ -149,7 +155,7 @@ public class MainGui extends Application{
 			if(srcPort!=null)
 				srcPort.getCircle().setStroke(Color.BLACK);
 			currentAction=Action.TRANS;
-			for(DevsObject state : states)
+			for(DevsObject state : couple.getModels())
 				for(Port p : state.getPorts())
 					p.getCircle().setOnMousePressed(event->{});
 			
@@ -163,8 +169,9 @@ public class MainGui extends Application{
 			Optional<String> result=dialog.showAndWait();
 			result.ifPresent(name->{
 				CodeGenerator C = new CodeGenerator();
+				couple.setName(name);
 				try {
-					C.generateCouple(name, states);
+					C.generateCouple(name, couple.getModels(),couple);
 				} catch (JClassAlreadyExistsException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -180,7 +187,7 @@ public class MainGui extends Application{
 		
 		lineButton.setOnAction(e->{
 			currentAction=Action.LINE;
-			for(DevsObject state : states){
+			for(DevsObject state : couple.getModels()){
 				for(Port p : state.getPorts()){
 					Circle c=p.getCircle();
 					c.setOnMousePressed(event->{
@@ -190,7 +197,7 @@ public class MainGui extends Application{
 								srcPort=p;
 								c.setStroke(Color.RED);
 							}
-							else if(!state.equals(src) && !srcPort.getType().equals(p.getType())){
+							else if(!state.equals(src) && (!srcPort.getType().equals(p.getType())|| src.equals(couple) || state.equals(couple))){
 								if(srcPort.getType().equals(Port.Type.INPUT)){
 									drawLine(state,p,srcPort);
 								}
@@ -207,9 +214,14 @@ public class MainGui extends Application{
 		
 		//Efface tout
 		cleanButton.setOnAction(e->{
+			Set<DevsObject> pending = new LinkedHashSet<>();
 			currentAction=Action.NONE;
-			canvas.getChildren().remove(1, canvas.getChildren().size());
-			states.clear();
+			canvas.getChildren().remove(2, canvas.getChildren().size());
+			for(DevsObject obj : couple.getModels()){
+				if(!obj.getClass().equals(DevsCouple.class))
+					pending.add(obj);
+			}
+			couple.getModels().removeAll(pending);
 			src=null;
 			DevsEnclosing.GEN_QUANTITY=0;
 			DevsEnclosing.TRANS_QUANTITY=0;
@@ -225,12 +237,15 @@ public class MainGui extends Application{
 		Rectangle R = new Rectangle(0,0,sceneWidth,sceneHeight);
 		R.setFill(Color.WHITE);
 		canvas.getChildren().add(R);
-		canvas.setOnMousePressed(e->{
+		
+		couple=new DevsCouple("");
+		Rectangle rootRect = (Rectangle)couple.getShape();
+		rootRect.setOnMousePressed(e->{
 			if(e.getButton().equals(MouseButton.PRIMARY)){
 				boolean superimposed=false;
 				switch(currentAction){
 					case RECT:
-						for(DevsObject obj : states){
+						for(DevsObject obj : couple.getModels()){
 							Shape rect = obj.getShape();
 							if(e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
 									e.getY()>=rect.getBoundsInParent().getMinY() && e.getY()<=rect.getBoundsInParent().getMinY()+rect.getBoundsInLocal().getHeight())
@@ -243,15 +258,15 @@ public class MainGui extends Application{
 						break;
 					case MODEL:
 						superimposed=false;
-						for(DevsObject obj : states){
+						for(DevsObject obj : couple.getModels()){
 							Shape rect = obj.getShape();
-							if(e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
+							if(!obj.getClass().equals(DevsCouple.class) && e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
 									e.getY()>=rect.getBoundsInParent().getMinY() && e.getY()<=rect.getBoundsInParent().getMinY()+rect.getBoundsInLocal().getHeight())
 								superimposed=true;
 						}
 						if(!superimposed){
 							int inc=0;
-							for(DevsObject obj : states){
+							for(DevsObject obj : couple.getModels()){
 								if(obj.getName().getText().matches(modelName+"[0-9]+"))
 									inc++;
 							}
@@ -260,9 +275,9 @@ public class MainGui extends Application{
 						break;
 					case GEN:
 						superimposed=false;
-						for(DevsObject obj : states){
+						for(DevsObject obj : couple.getModels()){
 							Shape rect = obj.getShape();
-							if(e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
+							if(!obj.getClass().equals(DevsCouple.class) && e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
 									e.getY()>=rect.getBoundsInParent().getMinY() && e.getY()<=rect.getBoundsInParent().getMinY()+rect.getBoundsInLocal().getHeight())
 								superimposed=true;
 						}
@@ -271,7 +286,7 @@ public class MainGui extends Application{
 						break;
 					case TRANS:
 						superimposed=false;
-						for(DevsObject obj : states){
+						for(DevsObject obj : couple.getModels()){
 							Shape rect = obj.getShape();
 							if(e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
 									e.getY()>=rect.getBoundsInParent().getMinY() && e.getY()<=rect.getBoundsInParent().getMinY()+rect.getBoundsInLocal().getHeight())
@@ -282,7 +297,13 @@ public class MainGui extends Application{
 						break;
 					default:
 				}
-			}	
+			}
+			if(e.getButton().equals(MouseButton.PRIMARY) && e.getClickCount()==2){
+				EditStateStage stage=new EditStateStage(this,couple);
+				stage.show();
+			}
+			if(e.getButton().equals(MouseButton.SECONDARY))
+				mousePosition.set(new Point2D(e.getSceneX(),e.getSceneY()));
 		});
 		
 		ToolBar toolBar = new ToolBar(
@@ -314,7 +335,7 @@ public class MainGui extends Application{
 			if(srcPort!=null)
 				srcPort.getCircle().setStroke(Color.BLACK);
 			currentAction=Action.MODEL;
-			for(DevsObject state : states)
+			for(DevsObject state : couple.getModels())
 				for(Port p : state.getPorts())
 					p.getCircle().setOnMousePressed(event->{});
 			modelName=modelsList.getSelectionModel().getSelectedItem().toString();
@@ -344,10 +365,56 @@ public class MainGui extends Application{
 
 		root.getChildren().add(toolBar);
 		root.getChildren().add(split);
-		primaryStage.setTitle("fwkDEVS");
+		primaryStage.setTitle("fwkDEVS (unnamed couple)");
 		primaryStage.setScene(s);
 		primaryStage.setResizable(true);
 		primaryStage.show();
+		
+		//rootRect.setX(sceneWidth/2-rootRect.getWidth()/2);
+		//rootRect.setY(sceneHeight/2-rootRect.getHeight()/2);
+		rootRect.setX(0);
+		rootRect.setY(0);
+		
+		canvas.getChildren().add(couple.getShape());
+		couple.getModels().add(couple);
+		rootRect.setOnMouseDragged(e->{
+			if(e.getButton().equals(MouseButton.SECONDARY)){
+				double offsetX = e.getSceneX()-mousePosition.get().getX();
+				double offsetY = e.getSceneY()-mousePosition.get().getY();
+				
+				rootRect.setWidth(rootRect.getWidth()+offsetX);
+				rootRect.setHeight(rootRect.getHeight()+offsetY);
+
+				mousePosition.set(new Point2D(e.getSceneX(), e.getSceneY()));
+				Set<Transition> transitions=new LinkedHashSet<>();
+				transitions.addAll(couple.getTransitions());
+				for(DevsObject obj : couple.getModels()){
+					for(Transition transition : obj.getTransitions()){
+						if(couple.getPorts().contains(transition.getSrc()) || couple.getPorts().contains(transition.getDest()))
+							transitions.add(transition);
+					}
+				}
+				this.removeInPorts(couple);
+				this.removeOutPorts(couple);
+				this.drawInPorts(couple);
+				this.drawOutPorts(couple);
+
+				for(DevsObject obj : couple.getModels()){
+					if(!rootRect.getBoundsInParent().contains(obj.getShape().getBoundsInParent())){
+						rootRect.setWidth(rootRect.getWidth()-offsetX);
+						rootRect.setHeight(rootRect.getHeight()-offsetY);
+					}
+				}
+				if(rootRect.getWidth()<500 || rootRect.getHeight()<500){
+					rootRect.setWidth(rootRect.getWidth()-offsetX);
+					rootRect.setHeight(rootRect.getHeight()-offsetY);
+				}
+				for(Transition transition : transitions){
+					this.drawLine(transition.getSrc().getParent(), transition.getSrc(), transition.getDest());
+				}
+			}
+		});
+		this.primaryStage=primaryStage;
 	}
 	
 	/**
@@ -360,7 +427,7 @@ public class MainGui extends Application{
 		StateRect rect = new StateRect();
 		rect.setX(x);
 		rect.setY(y);
-		DevsState Drect=new DevsState(name,rect);
+		DevsModel Drect=new DevsModel(name,rect);
 		try {
 			Drect.setPorts(Util.getAtomicModelPorts(Drect,modelName));
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -368,9 +435,19 @@ public class MainGui extends Application{
 			e.printStackTrace();
 		}
 		setDragAndDrop(Drect);
-		setEditState(Drect);
-		states.add(Drect);
+		couple.getModels().add(Drect);
 		canvas.getChildren().add(rect);
+
+		if(rect.getBoundsInParent().getMaxX()>couple.getShape().getBoundsInParent().getMaxX()){
+			Rectangle r=(Rectangle)couple.getShape();
+			r.setWidth(rect.getBoundsInLocal().getMaxX()-r.getX());
+			//couple.getShape().resize(rect.getBoundsInParent().getMaxX(), couple.getShape().getBoundsInParent().getMaxY());
+		}
+		if(rect.getBoundsInParent().getMaxY()>couple.getShape().getBoundsInParent().getMaxY()){
+			Rectangle r=(Rectangle)couple.getShape();
+			r.setHeight(rect.getBoundsInLocal().getMaxY()-r.getY());
+			//couple.getShape().resize(couple.getShape().getBoundsInParent().getMaxX(), rect.getBoundsInParent().getMaxY());
+		}
 		
 		//Dessine le nom de l'état au centre du rectangle
 		drawName(Drect);
@@ -388,7 +465,7 @@ public class MainGui extends Application{
 		circ.setCenterX(x);
 		circ.setCenterY(y);
 		setDragAndDrop(Gen);
-		states.add(Gen);
+		couple.getModels().add(Gen);
 		canvas.getChildren().add(circ);
 		drawName(Gen);
 		drawPorts(Gen);
@@ -405,7 +482,7 @@ public class MainGui extends Application{
 		circ.setCenterX(x);
 		circ.setCenterY(y);
 		setDragAndDrop(Trans);
-		states.add(Trans);
+		couple.getModels().add(Trans);
 		canvas.getChildren().add(circ);
 		drawName(Trans);
 		drawPorts(Trans);
@@ -459,10 +536,10 @@ public class MainGui extends Application{
 	 */
 	public void drawLine(DevsObject state,Port src,Port dest){
 		Line line = new Line();
-		line.setStartX(src.getCircle().getCenterX()+src.getCircle().getTranslateX());
-		line.setStartY(src.getCircle().getCenterY()+src.getCircle().getTranslateY());
-		line.setEndX(dest.getCircle().getCenterX()+dest.getCircle().getTranslateX());
-		line.setEndY(dest.getCircle().getCenterY()+dest.getCircle().getTranslateY());
+		line.setStartX(src.getCircle().getCenterX()+src.getCircle().getLayoutX());
+		line.setStartY(src.getCircle().getCenterY()+src.getCircle().getLayoutY());
+		line.setEndX(dest.getCircle().getCenterX()+dest.getCircle().getLayoutX());
+		line.setEndY(dest.getCircle().getCenterY()+dest.getCircle().getLayoutY());
 		Transition T=new Transition(src,dest,line);
 		
 		state.addTransition(T);
@@ -477,13 +554,31 @@ public class MainGui extends Application{
 	 * @return True s'il n'y a qu'une transition venant ou allant d'un port, false sinon.
 	 */
 	public boolean oneTransition(Transition trans){
-		for(DevsObject state : states){
+		for(DevsObject state : couple.getModels()){
 			for(Transition transition : state.getTransitions()){
 				if(isSrcOrDest(trans,transition))
 					return false;
 			}
 		}
 		return true;
+	}
+	
+	public boolean isInCouple(DevsObject obj,double x,double y){
+		Shape s = obj.getShape();
+		Shape cs = couple.getShape();
+		System.out.println(originX+" "+y+" "+cs.getBoundsInParent().getMaxX()+" "+cs.getBoundsInParent().getMaxY());
+		return cs.getBoundsInParent().contains(originPosX+x,originPosY+y) && 
+						cs.getBoundsInParent().contains(originPosX+s.getBoundsInParent().getWidth()+x,originPosY+s.getBoundsInParent().getHeight()+y);
+			
+		/*return (originPosX+1+s.getBoundsInParent().getWidth()+x)<cs.getBoundsInParent().getMaxX() &&
+				(originPosY+1+s.getBoundsInParent().getHeight()+y)<cs.getBoundsInParent().getMaxY() &&
+				(originPosX+1+x)>cs.getBoundsInParent().getMinX() &&
+				(originPosY+1+y)>cs.getBoundsInParent().getMinY();*/
+		
+		/*return s.getBoundsInParent().getMaxX()<cs.getBoundsInParent().getMaxX() &&
+				s.getBoundsInParent().getMaxY()<cs.getBoundsInParent().getMaxY() &&
+				s.getBoundsInParent().getMinX()>cs.getBoundsInParent().getMinX() &&
+				s.getBoundsInParent().getMinY()>cs.getBoundsInParent().getMinY();*/
 	}
 	
 	/**
@@ -579,7 +674,7 @@ public class MainGui extends Application{
 	 * Efface les ports d'un état.
 	 * @param state L'état concerné.
 	 */
-	public void removeInPorts(DevsState state){
+	public void removeInPorts(DevsCouple state){
 		for(Port p : state.getInputPorts()){
 			if(canvas.getChildren().contains(p.getCircle())){
 				canvas.getChildren().remove(p.getCircle());
@@ -593,7 +688,7 @@ public class MainGui extends Application{
 	 * Efface les ports d'un état.
 	 * @param state L'état concerné.
 	 */
-	public void removeOutPorts(DevsState state){
+	public void removeOutPorts(DevsCouple state){
 		for(Port p : state.getOutputPorts()){
 			if(canvas.getChildren().contains(p.getCircle())){
 				canvas.getChildren().remove(p.getCircle());
@@ -610,7 +705,7 @@ public class MainGui extends Application{
 	 */
 	public void removeTransitions(Port p){
 		Set<Transition> pendingTransitions;
-		for(DevsObject state : states){
+		for(DevsObject state : couple.getModels()){
 			pendingTransitions=new LinkedHashSet<>();
 			for(Transition transition : state.getTransitions()){
 				if(transition.getSrc().equals(p) || transition.getDest().equals(p)){
@@ -626,7 +721,7 @@ public class MainGui extends Application{
 	 * Met à jour les données de translation pour les ports.
 	 * @param state L'état contenant les ports concernés.
 	 */
-	public void updatePortTranslations(DevsState state){
+	public void updatePortTranslations(DevsCouple state){
 		Shape rect=state.getShape();
 		for(Port p : state.getPorts()){
 			p.getCircle().setTranslateX(rect.getBoundsInParent().getMinX()-rect.getBoundsInLocal().getMinX());
@@ -635,12 +730,20 @@ public class MainGui extends Application{
 			p.getName().setTranslateY(rect.getBoundsInParent().getMinY()-rect.getBoundsInLocal().getMinY());
 		}
 	}
+
+	/**
+	 * Permet de changer le titre de la fenêtre.
+	 * @param title Le nouveau titre.
+	 */
+	public void setTitle(String title){
+		primaryStage.setTitle(title);
+	}
 	
 	/**
 	 * Ajoute une action pour l'évènement drag and drop sur tous les rectangles.
 	 */
 	public void setDragAndDropAll(){
-		for(DevsObject state : states){
+		for(DevsObject state : couple.getModels()){
 			setDragAndDrop(state);
 		}
 	}
@@ -649,14 +752,14 @@ public class MainGui extends Application{
 	 * Ajoute une action pour l'évènement drag and drop pour le rectangle d'un état donné.
 	 * @param state L'état sur lequel on veut ajouter l'action drag and drop.
 	 */
-	public void setDragAndDrop(DevsObject state){
+	public void setDragAndDrop2(DevsObject state){
 		Shape rect = state.getShape();
 		rect.setOnMouseDragged(e->{
 			double offsetX = e.getSceneX() - originX;
 			double offsetY = e.getSceneY() - originY;
 			double newTranslateX = originTranslateX + offsetX;
 			double newTranslateY = originTranslateY + offsetY;
-			 
+
 			rect.setTranslateX(newTranslateX);
 			rect.setTranslateY(newTranslateY);
 
@@ -668,7 +771,7 @@ public class MainGui extends Application{
 				p.getCircle().setTranslateY(newTranslateY);
 				p.getName().setTranslateX(newTranslateX);
 				p.getName().setTranslateY(newTranslateY);
-				for(DevsObject s : states){
+				for(DevsObject s : couple.getModels()){
 					for(Transition transition : s.getTransitions()){
 						if(p.equals(transition.getSrc())){
 							transition.getLine().setStartX(transition.getSrc().getCircle().getCenterX()+transition.getSrc().getCircle().getTranslateX());
@@ -679,6 +782,82 @@ public class MainGui extends Application{
 							transition.getLine().setEndY(transition.getDest().getCircle().getCenterY()+transition.getDest().getCircle().getTranslateY());
 						}
 					}
+				}
+			}
+			if(!couple.getShape().getBoundsInParent().contains(rect.getBoundsInParent())){
+				rect.setLayoutX(rect.getLayoutX()-offsetX);
+				rect.setLayoutY(rect.getLayoutX()-offsetY);
+			}
+		});
+		
+		rect.setOnMousePressed(e->{
+			if(e.getButton()==MouseButton.SECONDARY){
+				if(state.getClass().equals(DevsEnclosing.class)){
+					if(state.getName().getText().contains("Gen"))
+						DevsEnclosing.GEN_QUANTITY--;
+					else
+						DevsEnclosing.TRANS_QUANTITY--;
+				}
+				canvas.getChildren().remove(rect);
+				canvas.getChildren().remove(state.getName());
+				removePorts(state);
+				couple.getModels().remove(state);
+			}
+			else{
+				originX=e.getSceneX();
+				originY=e.getSceneY();
+				originPosX=rect.getBoundsInParent().getMinX();
+				originPosY=rect.getBoundsInParent().getMinY();
+				originTranslateX = rect.getTranslateX();
+				originTranslateY = rect.getTranslateY();
+			}
+		});
+	}
+	
+	public void setDragAndDrop(DevsObject state){
+		Shape rect = state.getShape();
+		rect.setOnMouseDragged(e->{
+
+			double offsetX = e.getSceneX() - mousePosition.get().getX();
+			double offsetY = e.getSceneY() - mousePosition.get().getY();
+
+			rect.setLayoutX(rect.getLayoutX()+offsetX);
+			rect.setLayoutY(rect.getLayoutY()+offsetY);
+			mousePosition.set(new Point2D(e.getSceneX(), e.getSceneY()));
+
+			state.getName().setLayoutX(state.getName().getLayoutX()+offsetX);
+			state.getName().setLayoutY(state.getName().getLayoutY()+offsetY);
+			
+			for(Port p : state.getPorts()){
+				p.getCircle().setLayoutX(p.getCircle().getLayoutX()+offsetX);
+				p.getCircle().setLayoutY(p.getCircle().getLayoutY()+offsetY);
+				p.getName().setLayoutX(p.getName().getLayoutX()+offsetX);
+				p.getName().setLayoutY(p.getName().getLayoutY()+offsetY);
+				for(DevsObject s : couple.getModels()){
+					for(Transition transition : s.getTransitions()){
+						if(p.equals(transition.getSrc())){
+							transition.getLine().setStartX(transition.getSrc().getCircle().getCenterX()+transition.getSrc().getCircle().getLayoutX());
+							transition.getLine().setStartY(transition.getSrc().getCircle().getCenterY()+transition.getSrc().getCircle().getLayoutY());
+						}
+						else{
+							transition.getLine().setEndX(transition.getDest().getCircle().getCenterX()+transition.getDest().getCircle().getLayoutX());
+							transition.getLine().setEndY(transition.getDest().getCircle().getCenterY()+transition.getDest().getCircle().getLayoutY());
+						}
+					}
+				}
+			}
+			
+			
+			if(!couple.getShape().getBoundsInParent().contains(rect.getBoundsInParent())){
+				rect.setLayoutX(rect.getLayoutX()-offsetX);
+				rect.setLayoutY(rect.getLayoutY()-offsetY);
+				state.getName().setLayoutX(state.getName().getLayoutX()-offsetX);
+				state.getName().setLayoutY(state.getName().getLayoutY()-offsetY);
+				for(Port p : state.getPorts()){
+					p.getCircle().setLayoutX(p.getCircle().getLayoutX()-offsetX);
+					p.getCircle().setLayoutY(p.getCircle().getLayoutY()-offsetY);
+					p.getName().setLayoutX(p.getName().getLayoutX()-offsetX);
+					p.getName().setLayoutY(p.getName().getLayoutY()-offsetY);
 				}
 			}
 		});
@@ -694,22 +873,18 @@ public class MainGui extends Application{
 				canvas.getChildren().remove(rect);
 				canvas.getChildren().remove(state.getName());
 				removePorts(state);
-				states.remove(state);
+				couple.getModels().remove(state);
 			}
 			else{
-				originX=e.getSceneX();
-				originY=e.getSceneY();
-				originTranslateX = rect.getTranslateX();
-				originTranslateY = rect.getTranslateY();
+				mousePosition.set(new Point2D(e.getSceneX(),e.getSceneY()));
 			}
 		});
 	}
-	
 	/**
 	 * Ajoute la possibilité de modifier un état en double cliquant.
 	 * @param state L'état à modifier.
 	 */
-	public void setEditState(DevsState state){
+	/*public void setEditState(DevsState state){
 		Shape rect=state.getShape();
 		rect.setOnMouseClicked(e->{
 			if(e.getClickCount()==2){
@@ -718,7 +893,7 @@ public class MainGui extends Application{
 			}
 		});
 		
-	}
+	}*/
 	
 	
 	/**

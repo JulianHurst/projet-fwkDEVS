@@ -12,6 +12,9 @@ import javafx.scene.text.Text;
  *
  */
 public class DevsModel extends DevsObject{
+	/**
+	 * Le nom de l'objet (Nom de la classe).
+	 */
 	private String objectName;	
 	
 	/**

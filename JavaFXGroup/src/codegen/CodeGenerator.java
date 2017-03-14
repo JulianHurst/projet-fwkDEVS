@@ -50,7 +50,7 @@ public class CodeGenerator {
 		JBlock constructorBody = constructor.body();
 		
 		for(DevsModel model : Util.getModels(objects)){
-			coupleClass.field(JMod.PRIVATE, Class.forName("models."+model.getName().getText().replaceAll("[0-9]+$", "")), model.getName().getText());
+			coupleClass.field(JMod.PRIVATE, Class.forName("models."+model.getObjectName()), model.getName().getText());
 			constructorBody.assign(JExpr.ref(model.getName().getText()), JExpr._new(codeModel._ref(Class.forName("models."+model.getName().getText().replaceAll("[0-9]+$", "")))).arg(model.getName().getText()));
 			constructorBody.invoke(JExpr._this().invoke("getSubModels"),"add").arg(JExpr.ref(model.getName().getText()));
 		}

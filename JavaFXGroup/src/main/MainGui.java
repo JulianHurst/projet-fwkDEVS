@@ -1,18 +1,27 @@
 package main;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+
 import com.sun.codemodel.JClassAlreadyExistsException;
 
+import DEVSModel.DEVSCoupled;
+import DEVSSimulator.Root;
 import codegen.CodeGenerator;
 import devs.DevsCouple;
 import devs.DevsEnclosing;
-import devs.DevsObject;
 import devs.DevsModel;
+import devs.DevsObject;
 import devs.Port;
 import devs.StateRect;
 import devs.Transition;
@@ -76,10 +85,6 @@ public class MainGui extends Application{
 	 */
 	private Port srcPort=null;
 	/**
-	 * Les coordonnées nécessaires pour la mise à jour de la position lors du drag and drop.
-	 */
-	private double originX,originY,originTranslateX,originTranslateY,originPosX,originPosY;
-	/**
 	 * Le nom du modèle atomique à dessiner.
 	 */
 	private String modelName;
@@ -87,7 +92,13 @@ public class MainGui extends Application{
 	 * Le scale qui permet de zoomer sur le canvas.
 	 */
 	private Scale zoomer;
+	/**
+	 * La liste de tous les modèles atomiques.
+	 */
 	private ListView<String> modelsList;
+	/**
+	 * Les propriétés de la souris pour le drag and drop.
+	 */
 	final ObjectProperty<Point2D> mousePosition = new SimpleObjectProperty<>();
 	/**
 	 * Initialisation et lancement de l'interface
@@ -96,7 +107,7 @@ public class MainGui extends Application{
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		VBox root = new VBox();	
-		Button rectButton,lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton,generateButton;
+		Button rectButton,lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton,generateButton,executeButton;
 		
 		//Permet de dessiner des rectangles
 		rectButton=new Button("Rect");
@@ -109,6 +120,7 @@ public class MainGui extends Application{
 		//Permet d'effacer tout (rectangles et liens)
 		cleanButton=new Button("Clear");
 		generateButton=new Button("Generate");
+		executeButton=new Button("Execute");
 		
 		zoomButton=new Button("Zoom in");
 		unzoomButton=new Button("Zoom out");
@@ -162,28 +174,21 @@ public class MainGui extends Application{
 		});
 
 		generateButton.setOnAction(e->{
-			TextInputDialog dialog = new TextInputDialog();
-			dialog.setTitle("Couple name");
-			dialog.setHeaderText("Couple name");
-			dialog.setContentText("Choose a name for the couple :");
-			Optional<String> result=dialog.showAndWait();
-			result.ifPresent(name->{
-				CodeGenerator C = new CodeGenerator();
-				couple.setName(name);
-				setTitle(name);
-				try {
-					C.generateCouple(name, couple.getModels(),couple);
-				} catch (JClassAlreadyExistsException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				} catch (ClassNotFoundException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-			});
+			generate();
+		});
+		
+		executeButton.setOnAction(e->{
+			generate();
+			compile();
+			try {
+				execute();
+			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (MalformedURLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		});
 		
 		lineButton.setOnAction(e->{
@@ -289,7 +294,7 @@ public class MainGui extends Application{
 						superimposed=false;
 						for(DevsObject obj : couple.getModels()){
 							Shape rect = obj.getShape();
-							if(e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
+							if(!obj.getClass().equals(DevsCouple.class) && e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
 									e.getY()>=rect.getBoundsInParent().getMinY() && e.getY()<=rect.getBoundsInParent().getMinY()+rect.getBoundsInLocal().getHeight())
 								superimposed=true;
 						}
@@ -323,7 +328,8 @@ public class MainGui extends Application{
 				unzoomButton,
 				new Separator(Orientation.VERTICAL),
 				reloadButton,
-				generateButton
+				generateButton,
+				executeButton
 		);
 		s = new Scene(root, 1200, 600, Color.BLACK);
 
@@ -419,6 +425,58 @@ public class MainGui extends Application{
 	}
 	
 	/**
+	 * Génère la classe du couple. 
+	 */
+	public void generate(){
+		TextInputDialog dialog = new TextInputDialog();
+		dialog.setTitle("Couple name");
+		dialog.setHeaderText("Couple name");
+		dialog.setContentText("Choose a name for the couple :");
+		Optional<String> result=dialog.showAndWait();
+		result.ifPresent(name->{
+			CodeGenerator C = new CodeGenerator();
+			couple.setName(name);
+			setTitle(name);
+			try {
+				C.generateCouple(name, couple.getModels(),couple);
+			} catch (JClassAlreadyExistsException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (ClassNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		});
+	}
+	
+	/**
+	 * Compile le code généré.
+	 */
+	public void compile(){
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		compiler.run(null, null, null, System.getProperty("user.dir")+"/src/gen/"+couple.getName().getText()+".java");
+	}
+	
+	/**
+	 * Execute la simulation sur le couple courant.
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws ClassNotFoundException
+	 * @throws MalformedURLException
+	 */
+	public void execute() throws InstantiationException, IllegalAccessException, ClassNotFoundException, MalformedURLException{ 
+		File bin = new File(System.getProperty("user.dir")+"/src");
+		URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { bin.toURI().toURL() });
+
+		DEVSCoupled execCouple = (DEVSCoupled)Class.forName("gen."+couple.getName().getText(),true,classLoader).newInstance();
+		Root root = new Root(execCouple,150);
+		root.startSimulation();
+	}
+	
+	/**
 	 * Dessine un rectangle sur le Group.
 	 * @param x La position abscisse où dessiner le rectangle.
 	 * @param y La position ordonnée où dessiner le rectangle.
@@ -428,7 +486,7 @@ public class MainGui extends Application{
 		StateRect rect = new StateRect();
 		rect.setX(x);
 		rect.setY(y);
-		DevsModel Drect=new DevsModel(name,rect);
+		DevsModel Drect=new DevsModel(name,rect,modelName);
 		try {
 			Drect.setPorts(Util.getAtomicModelPorts(Drect,modelName));
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -463,13 +521,23 @@ public class MainGui extends Application{
 	public void drawGen(double x,double y){
 		DevsEnclosing Gen=new DevsEnclosing(DevsEnclosing.Type.GEN);
 		Circle circ = (Circle)Gen.getShape();
-		circ.setCenterX(x);
-		circ.setCenterY(y);
+		circ.setCenterX(x+circ.getRadius());
+		circ.setCenterY(y+circ.getRadius());
 		setDragAndDrop(Gen);
 		couple.getModels().add(Gen);
 		canvas.getChildren().add(circ);
 		drawName(Gen);
 		drawPorts(Gen);
+		if(circ.getBoundsInParent().getMaxX()>couple.getShape().getBoundsInParent().getMaxX()){
+			Rectangle r=(Rectangle)couple.getShape();
+			r.setWidth(circ.getBoundsInLocal().getMaxX()-r.getX());
+			//couple.getShape().resize(circ.getBoundsInParent().getMaxX(), couple.getShape().getBoundsInParent().getMaxY());
+		}
+		if(circ.getBoundsInParent().getMaxY()>couple.getShape().getBoundsInParent().getMaxY()){
+			Rectangle r=(Rectangle)couple.getShape();
+			r.setHeight(circ.getBoundsInLocal().getMaxY()-r.getY());
+			//couple.getShape().resize(couple.getShape().getBoundsInParent().getMaxX(), circ.getBoundsInParent().getMaxY());
+		}
 	}
 
 	/**
@@ -480,13 +548,23 @@ public class MainGui extends Application{
 	public void drawTrans(double x,double y){
 		DevsEnclosing Trans=new DevsEnclosing(DevsEnclosing.Type.TRANS);
 		Circle circ = (Circle)Trans.getShape();
-		circ.setCenterX(x);
-		circ.setCenterY(y);
+		circ.setCenterX(x+circ.getRadius());
+		circ.setCenterY(y+circ.getRadius());
 		setDragAndDrop(Trans);
 		couple.getModels().add(Trans);
 		canvas.getChildren().add(circ);
 		drawName(Trans);
 		drawPorts(Trans);
+		if(circ.getBoundsInParent().getMaxX()>couple.getShape().getBoundsInParent().getMaxX()){
+			Rectangle r=(Rectangle)couple.getShape();
+			r.setWidth(circ.getBoundsInLocal().getMaxX()-r.getX());
+			//couple.getShape().resize(circ.getBoundsInParent().getMaxX(), couple.getShape().getBoundsInParent().getMaxY());
+		}
+		if(circ.getBoundsInParent().getMaxY()>couple.getShape().getBoundsInParent().getMaxY()){
+			Rectangle r=(Rectangle)couple.getShape();
+			r.setHeight(circ.getBoundsInLocal().getMaxY()-r.getY());
+			//couple.getShape().resize(couple.getShape().getBoundsInParent().getMaxX(), circ.getBoundsInParent().getMaxY());
+		}
 	}
 	
 	/**
@@ -562,24 +640,6 @@ public class MainGui extends Application{
 			}
 		}
 		return true;
-	}
-	
-	public boolean isInCouple(DevsObject obj,double x,double y){
-		Shape s = obj.getShape();
-		Shape cs = couple.getShape();
-		System.out.println(originX+" "+y+" "+cs.getBoundsInParent().getMaxX()+" "+cs.getBoundsInParent().getMaxY());
-		return cs.getBoundsInParent().contains(originPosX+x,originPosY+y) && 
-						cs.getBoundsInParent().contains(originPosX+s.getBoundsInParent().getWidth()+x,originPosY+s.getBoundsInParent().getHeight()+y);
-			
-		/*return (originPosX+1+s.getBoundsInParent().getWidth()+x)<cs.getBoundsInParent().getMaxX() &&
-				(originPosY+1+s.getBoundsInParent().getHeight()+y)<cs.getBoundsInParent().getMaxY() &&
-				(originPosX+1+x)>cs.getBoundsInParent().getMinX() &&
-				(originPosY+1+y)>cs.getBoundsInParent().getMinY();*/
-		
-		/*return s.getBoundsInParent().getMaxX()<cs.getBoundsInParent().getMaxX() &&
-				s.getBoundsInParent().getMaxY()<cs.getBoundsInParent().getMaxY() &&
-				s.getBoundsInParent().getMinX()>cs.getBoundsInParent().getMinX() &&
-				s.getBoundsInParent().getMinY()>cs.getBoundsInParent().getMinY();*/
 	}
 	
 	/**

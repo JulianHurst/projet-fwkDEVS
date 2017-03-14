@@ -12,14 +12,16 @@ import javafx.scene.text.Text;
  *
  */
 public class DevsModel extends DevsObject{
-
+	private String objectName;	
+	
 	/**
 	 * Constructeur d'un modèle atomique
 	 * @param name Le nom du modèle atomique.
 	 * @param rect Le rectangle qui représente le modèle atomique.
 	 */
-	public DevsModel(String name,StateRect rect){
+	public DevsModel(String name,StateRect rect,String objectName){
 		this.name=new Text(name);
+		this.objectName=objectName;
 		this.shape=rect;
 		transitions=new LinkedHashSet<>();
 		ports=new LinkedHashSet<>();
@@ -129,6 +131,13 @@ public class DevsModel extends DevsObject{
 			this.ports.removeAll(pendingPorts);
 		}
 	}
-	
+
+	public String getObjectName() {
+		return objectName;
+	}
+
+	public void setObjectName(String objectName) {
+		this.objectName = objectName;
+	}
 	
 }

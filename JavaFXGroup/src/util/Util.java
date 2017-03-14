@@ -9,9 +9,11 @@ import java.util.List;
 import java.util.Set;
 
 import DEVSModel.DEVSAtomic;
+import DEVSModel.DEVSCoupled;
 import devs.DevsEnclosing;
-import devs.DevsObject;
 import devs.DevsModel;
+import devs.DevsModule;
+import devs.DevsObject;
 import devs.Port;
 
 public final class Util {
@@ -79,6 +81,45 @@ public final class Util {
 			result.add(file.replace(".java", ""));
 		return result;
 	}
+	
+	/**
+	 * Récupère les ports du couple spécifié.
+	 * @param model Le nom de la classe qui réfère au couple.
+	 * @return L'ensemble des ports.
+	 * @throws InstantiationException Lancée si newInstance échoue.
+	 * @throws IllegalAccessException Lancée si l'accès à une méthode particulière n'est pas authorisé.
+	 * @throws IllegalArgumentException Lancée si l'argument du constructeur n'est pas valide.
+	 * @throws InvocationTargetException Lancée si une exception est lancée dans le contructeur appelé.
+	 * @throws NoSuchMethodException Lancée si le constructeur spécifié n'est pas trouvé.
+	 * @throws SecurityException Lancée si la sécurité est violée (private).
+	 * @throws ClassNotFoundException Lancée si la classe demandée n'est pas trouvée.
+	 */
+	public static Set<Port> getAtomicCouplePorts(DevsObject parent, String model) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException{ 
+		Set<Port> result=new LinkedHashSet<>();
+		Object thing=Class.forName("couples."+model).newInstance();
+		DEVSCoupled a = (DEVSCoupled)thing;
+		for(DEVSModel.Port P : a.getInPorts()){
+			result.add(new Port(parent,P.getName(),Port.Type.INPUT));
+		}
+		for(DEVSModel.Port P : a.getOutPorts()){
+			result.add(new Port(parent,P.getName(),Port.Type.OUTPUT));
+		}
+		return result;
+	}
+	
+	/**
+	 * Récupère les noms de tous les couples (contenus dans le package couples).
+	 * @return Une liste des noms des classes.
+	 */
+	public static List<String> getAtomicCoupleNames(){
+		List<String> result = new ArrayList<>();
+		File pack = new File(System.getProperty("user.dir")+"/src/couples");
+		if(!pack.exists())
+			pack.mkdir();
+		for(String file : pack.list())
+			result.add(file.replace(".java", ""));
+		return result;
+	}
 
 	/**
 	 * Récupère les générateurs et/ou transducers contenus dans un ensemble de DevsObjects.
@@ -104,6 +145,20 @@ public final class Util {
 		for(DevsObject obj : objects){
 			if(obj.getClass().equals(DevsModel.class))
 			result.add((DevsModel)obj);
+		}
+		return result;
+	}
+	
+	/**
+	 * Récupère les modules contenus dans un ensemble d'objets.
+	 * @param objects L'ensemble d'objets.
+	 * @return L'ensemble des modules.
+	 */
+	public static Set<DevsModule> getModules(Set<DevsObject> objects){
+		Set<DevsModule> result=new LinkedHashSet<>();
+		for(DevsObject obj : objects){
+			if(obj.getClass().equals(DevsModule.class))
+			result.add((DevsModule)obj);
 		}
 		return result;
 	}

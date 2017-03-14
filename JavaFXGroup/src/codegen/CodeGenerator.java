@@ -19,6 +19,7 @@ import DEVSModel.DEVSCoupled;
 import devs.DevsCouple;
 import devs.DevsEnclosing;
 import devs.DevsModel;
+import devs.DevsModule;
 import devs.DevsObject;
 import devs.Port;
 import devs.Transition;
@@ -31,7 +32,7 @@ public class CodeGenerator {
 	JPackage jp;
 	
 	public CodeGenerator(){
-		jp = codeModel._package("gen");
+		jp = codeModel._package("couples");
 	}
 	
 	/**
@@ -51,7 +52,7 @@ public class CodeGenerator {
 		
 		for(DevsModel model : Util.getModels(objects)){
 			coupleClass.field(JMod.PRIVATE, Class.forName("models."+model.getObjectName()), model.getName().getText());
-			constructorBody.assign(JExpr.ref(model.getName().getText()), JExpr._new(codeModel._ref(Class.forName("models."+model.getName().getText().replaceAll("[0-9]+$", "")))).arg(model.getName().getText()));
+			constructorBody.assign(JExpr.ref(model.getName().getText()), JExpr._new(codeModel._ref(Class.forName("models."+model.getObjectName()))).arg(model.getName().getText()));
 			constructorBody.invoke(JExpr._this().invoke("getSubModels"),"add").arg(JExpr.ref(model.getName().getText()));
 		}
 		for(DevsEnclosing enclosing : Util.getEnclosing(objects)){
@@ -66,6 +67,11 @@ public class CodeGenerator {
 				constructorBody.invoke(JExpr._this().invoke("getSubModels"),"add").arg(JExpr.ref(enclosing.getName().getText()));
 			}
 		}
+		for(DevsModule module : Util.getModules(objects)){
+			coupleClass.field(JMod.PRIVATE, Class.forName("couples."+module.getObjectName()), module.getName().getText());
+			constructorBody.assign(JExpr.ref(module.getName().getText()), JExpr._new(codeModel._ref(Class.forName("couples."+module.getObjectName()))));
+			constructorBody.invoke(JExpr._this().invoke("getSubModels"),"add").arg(JExpr.ref(module.getName().getText()));
+		}
 		
 		
 		
@@ -79,8 +85,12 @@ public class CodeGenerator {
 				}
 			}
 		}
+	
+		Set<DevsObject> modelsModules=new LinkedHashSet<>();
+		modelsModules.addAll(Util.getModels(objects));
+		modelsModules.addAll(Util.getModules(objects));
 		
-		for(DevsModel model : Util.getModels(objects)){
+		for(DevsObject model : modelsModules){
 			for(Transition transition : model.getTransitions()){
 				if(!transition.getDest().getParent().getClass().equals(DevsCouple.class)){
 					JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addIC");

@@ -1,11 +1,8 @@
 package main;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -21,9 +18,9 @@ import codegen.CodeGenerator;
 import devs.DevsCouple;
 import devs.DevsEnclosing;
 import devs.DevsModel;
+import devs.DevsModule;
 import devs.DevsObject;
 import devs.Port;
-import devs.StateRect;
 import devs.Transition;
 import javafx.application.Application;
 import javafx.beans.property.ObjectProperty;
@@ -38,6 +35,8 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToolBar;
 import javafx.scene.input.MouseButton;
@@ -71,7 +70,7 @@ public class MainGui extends Application{
 	/**
 	 * Les actions possibles
 	 */
-	private enum Action{RECT,LINE,MODEL,GEN,TRANS,NONE};
+	private enum Action{RECT,LINE,MODEL,COUPLE,GEN,TRANS,NONE};
 	/**
 	 * L'action active.
 	 */
@@ -96,6 +95,7 @@ public class MainGui extends Application{
 	 * La liste de tous les modèles atomiques.
 	 */
 	private ListView<String> modelsList;
+	private ListView<String> couplesList;
 	/**
 	 * Les propriétés de la souris pour le drag and drop.
 	 */
@@ -125,7 +125,7 @@ public class MainGui extends Application{
 		zoomButton=new Button("Zoom in");
 		unzoomButton=new Button("Zoom out");
 		
-		reloadButton=new Button("Reload models");
+		reloadButton=new Button("Reload lists");
 
 		zoomButton.setOnAction(e->{
 			if(zoomer.getX()<50){
@@ -179,7 +179,7 @@ public class MainGui extends Application{
 		
 		executeButton.setOnAction(e->{
 			generate();
-			compile();
+			compile(couple.getName().getText());
 			try {
 				execute();
 			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1) {
@@ -228,13 +228,14 @@ public class MainGui extends Application{
 					pending.add(obj);
 			}
 			couple.getModels().removeAll(pending);
+			drawPorts(couple);
 			src=null;
 			DevsEnclosing.GEN_QUANTITY=0;
 			DevsEnclosing.TRANS_QUANTITY=0;
 		});
 		
 		reloadButton.setOnAction(e->{
-			reloadModels();
+			reloadAll();
 		});
 		
 		
@@ -263,6 +264,23 @@ public class MainGui extends Application{
 					case LINE:
 						break;
 					case MODEL:
+						superimposed=false;
+						for(DevsObject obj : couple.getModels()){
+							Shape rect = obj.getShape();
+							if(!obj.getClass().equals(DevsCouple.class) && e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
+									e.getY()>=rect.getBoundsInParent().getMinY() && e.getY()<=rect.getBoundsInParent().getMinY()+rect.getBoundsInLocal().getHeight())
+								superimposed=true;
+						}
+						if(!superimposed){
+							int inc=0;
+							for(DevsObject obj : couple.getModels()){
+								if(obj.getName().getText().matches(modelName+"[0-9]+"))
+									inc++;
+							}
+							drawRect(e.getX(),e.getY(),modelName+inc);
+						}
+						break;
+					case COUPLE:
 						superimposed=false;
 						for(DevsObject obj : couple.getModels()){
 							Shape rect = obj.getShape();
@@ -332,9 +350,20 @@ public class MainGui extends Application{
 				executeButton
 		);
 		s = new Scene(root, 1200, 600, Color.BLACK);
+		
+		TabPane tabPane = new TabPane();
+		Tab modelsTab = new Tab();
+		Tab couplesTab = new Tab();
+		modelsTab.setText("Models");
+		couplesTab.setText("Couples");
 
 		modelsList = new ListView<>();
+		couplesList = new ListView<>();
 		modelsList.getItems().addAll(Util.getAtomicModelNames());
+		for(String couple : Util.getAtomicCoupleNames()){
+			if(Util.getAtomicCouplePorts(new DevsCouple("tmp"), couple).size()>0)
+				couplesList.getItems().add(couple);
+		}
 		
 		//Ajoute la création de modèles atomiques avec leurs ports.
 		modelsList.setOnMouseClicked(e->{
@@ -348,13 +377,30 @@ public class MainGui extends Application{
 			modelName=modelsList.getSelectionModel().getSelectedItem().toString();
 		});
 		
+		couplesList.setOnMouseClicked(e->{
+			src=null;
+			if(srcPort!=null)
+				srcPort.getCircle().setStroke(Color.BLACK);
+			currentAction=Action.COUPLE;
+			for(DevsObject state : couple.getModels())
+				for(Port p : state.getPorts())
+					p.getCircle().setOnMousePressed(event->{});
+			modelName=couplesList.getSelectionModel().getSelectedItem().toString();
+		});
+		
+		modelsTab.setContent(modelsList);
+		couplesTab.setContent(couplesList);
+
+		tabPane.getTabs().add(modelsTab);
+		tabPane.getTabs().add(couplesTab);
+		
 		Text modelTitle = new Text("Models");
 		VBox titleBox = new VBox();
 		titleBox.getChildren().add(modelTitle);
 		titleBox.setAlignment(Pos.CENTER);
 
 		VBox modelBox = new VBox();
-		modelBox.getChildren().addAll(titleBox,modelsList);
+		modelBox.getChildren().addAll(titleBox,tabPane);
 		modelBox.setMaxWidth(300);
 		
 		Group container = new Group();
@@ -453,11 +499,12 @@ public class MainGui extends Application{
 	}
 	
 	/**
-	 * Compile le code généré.
+	 * Compile le couple spécifié.
+	 * @param coupleClass Le nom du couple.
 	 */
-	public void compile(){
+	public void compile(String coupleClass){
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		compiler.run(null, null, null, System.getProperty("user.dir")+"/src/gen/"+couple.getName().getText()+".java");
+		compiler.run(null, null, null, "-d",System.getProperty("user.dir")+"/bin",System.getProperty("user.dir")+"/src/couples/"+coupleClass+".java");
 	}
 	
 	/**
@@ -468,10 +515,11 @@ public class MainGui extends Application{
 	 * @throws MalformedURLException
 	 */
 	public void execute() throws InstantiationException, IllegalAccessException, ClassNotFoundException, MalformedURLException{ 
-		File bin = new File(System.getProperty("user.dir")+"/src");
-		URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { bin.toURI().toURL() });
+		//File bin = new File(System.getProperty("user.dir")+"/src");
+		//URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { bin.toURI().toURL() });
 
-		DEVSCoupled execCouple = (DEVSCoupled)Class.forName("gen."+couple.getName().getText(),true,classLoader).newInstance();
+		//DEVSCoupled execCouple = (DEVSCoupled)Class.forName("gen."+couple.getName().getText(),true,classLoader).newInstance();
+		DEVSCoupled execCouple = (DEVSCoupled)Class.forName("couples."+couple.getName().getText()).newInstance();
 		Root root = new Root(execCouple,150);
 		root.startSimulation();
 	}
@@ -483,12 +531,22 @@ public class MainGui extends Application{
 	 * @param name Le nom du modèle atomique.
 	 */
 	public void drawRect(double x,double y,String name){
-		StateRect rect = new StateRect();
+		DevsObject Drect;
+		if(currentAction.equals(Action.COUPLE)){
+			Drect=new DevsModule(name,modelName);
+		}
+		else{
+			Drect=new DevsModel(name,modelName);
+		}
+		Rectangle rect=(Rectangle)Drect.getShape();
 		rect.setX(x);
 		rect.setY(y);
-		DevsModel Drect=new DevsModel(name,rect,modelName);
 		try {
-			Drect.setPorts(Util.getAtomicModelPorts(Drect,modelName));
+			if(currentAction.equals(Action.COUPLE)){
+				Drect.setPorts(Util.getAtomicCouplePorts(Drect,modelName));
+			}
+			else
+				Drect.setPorts(Util.getAtomicModelPorts(Drect,modelName));
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException | ClassNotFoundException e) {
 			e.printStackTrace();
@@ -573,6 +631,26 @@ public class MainGui extends Application{
 	public void reloadModels(){
 		modelsList.getItems().clear();
 		modelsList.getItems().addAll(Util.getAtomicModelNames());
+	}
+	
+	public void reloadCouples() throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException{
+		couplesList.getItems().clear();
+		for(String couple : Util.getAtomicCoupleNames()){
+			compile(couple);
+			if(Util.getAtomicCouplePorts(new DevsCouple("tmp"), couple).size()>0)
+				couplesList.getItems().add(couple);
+		}
+	}
+	
+	public void reloadAll(){
+		reloadModels();
+		try {
+			reloadCouples();
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException | ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -901,7 +979,7 @@ public class MainGui extends Application{
 	 * @param rect2 Le deuxième rectangle.
 	 * @return Les coordonnées de départ de la ligne.
 	 */
-	public Point2D getJoin(StateRect rect1, StateRect rect2){
+	public Point2D getJoin(Rectangle rect1, Rectangle rect2){
 		double x,y;
 		x=rect1.getBoundsInParent().getMinX()-rect2.getBoundsInParent().getMinX();
 		y=rect1.getBoundsInParent().getMinY()-rect2.getBoundsInParent().getMinY();

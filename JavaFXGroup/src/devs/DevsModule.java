@@ -9,31 +9,30 @@ import javafx.scene.text.Text;
 import util.Util;
 
 /**
- * Un modèle atomique.
- * @author Julian
+ * Un module (couple incomplet).
+ * @author juju
  *
  */
-public class DevsModel extends DevsObject{
+public class DevsModule extends DevsObject {
+
 	/**
 	 * Le nom de l'objet (Nom de la classe).
 	 */
 	private String objectName;	
 	
 	/**
-	 * Constructeur d'un modèle atomique
-	 * @param name Le nom du modèle atomique.
-	 * @param rect Le rectangle qui représente le modèle atomique.
+	 * Constructeur d'un module (couple incomplet).
+	 * @param name Le nom du module.
+	 * @param rect Le rectangle qui représente le module.
 	 */
-	public DevsModel(String name,String objectName){
+	public DevsModule(String name,String objectName){
 		this.name=new Text(name);
 		this.objectName=objectName;
 		this.shape=new Rectangle(200,100);
-		shape.setStroke(Color.BLACK);
+		shape.setStroke(Color.BLUE);
 		shape.setFill(Color.WHITE);
 		transitions=new LinkedHashSet<>();
 		ports=new LinkedHashSet<>();
-		ports.add(new Port(this,"in0",Port.Type.INPUT));
-		ports.add(new Port(this,"out0",Port.Type.OUTPUT));
 	}
 
 	/**
@@ -53,7 +52,7 @@ public class DevsModel extends DevsObject{
 	
 
 	/**
-	 * Ajoute un port si il n'existe pas déjà pour ce modèle atomique.
+	 * Ajoute un port si il n'existe pas déjà pour ce module. 
 	 * @param port Le port à ajouter.
 	 * @return True si l'ajout est effectué avec succès, false sinon.
 	 */
@@ -146,5 +145,5 @@ public class DevsModel extends DevsObject{
 	public void setObjectName(String objectName) {
 		this.objectName = objectName;
 	}
-	
+
 }

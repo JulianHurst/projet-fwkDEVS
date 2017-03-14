@@ -37,6 +37,7 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TabPane.TabClosingPolicy;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToolBar;
 import javafx.scene.input.MouseButton;
@@ -393,15 +394,8 @@ public class MainGui extends Application{
 
 		tabPane.getTabs().add(modelsTab);
 		tabPane.getTabs().add(couplesTab);
-		
-		Text modelTitle = new Text("Models");
-		VBox titleBox = new VBox();
-		titleBox.getChildren().add(modelTitle);
-		titleBox.setAlignment(Pos.CENTER);
-
-		VBox modelBox = new VBox();
-		modelBox.getChildren().addAll(titleBox,tabPane);
-		modelBox.setMaxWidth(300);
+		tabPane.setMaxWidth(300);
+		tabPane.setTabClosingPolicy(TabClosingPolicy.UNAVAILABLE);
 		
 		Group container = new Group();
 		container.getChildren().add(canvas);
@@ -414,7 +408,7 @@ public class MainGui extends Application{
 		
 		SplitPane split = new SplitPane();
 		split.setOrientation(Orientation.HORIZONTAL);
-		split.getItems().addAll(modelBox,scroller);
+		split.getItems().addAll(tabPane,scroller);
 
 		root.getChildren().add(toolBar);
 		root.getChildren().add(split);

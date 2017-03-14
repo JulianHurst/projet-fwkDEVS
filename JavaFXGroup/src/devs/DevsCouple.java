@@ -2,29 +2,36 @@ package devs;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Text;
 import util.Util;
 
-import javafx.scene.text.Text;
-
 /**
- * Un état DEVS.
- * @author Julian
+ * Représente un couple.
+ * @author juju
  *
  */
-public class DevsState extends DevsObject{
-
+public class DevsCouple extends DevsObject {
+	
+	Set<DevsObject> models;
+	
 	/**
-	 * Constructeur d'un état
-	 * @param name Le nom de l'état.
-	 * @param rect Le rectangle qui représente l'état.
+	 * Constructeur d'un couple
+	 * @param name Le nom du couple.
+	 * @param rect Le rectangle qui représente le couple.
 	 */
-	public DevsState(String name,StateRect rect){
+	public DevsCouple(String name){
 		this.name=new Text(name);
-		this.shape=rect;
+		this.shape=new Rectangle(1000,800);
+		models=new LinkedHashSet<>();
+		shape.setStroke(Color.BLACK);
+		shape.setFill(Color.WHITE);
 		transitions=new LinkedHashSet<>();
 		ports=new LinkedHashSet<>();
-		ports.add(new Port(this,"in0",Port.Type.INPUT));
-		ports.add(new Port(this,"out0",Port.Type.OUTPUT));
+		//ports.add(new Port(this,"in0",Port.Type.INPUT));
+		//ports.add(new Port(this,"out0",Port.Type.OUTPUT));
 	}
 
 	/**
@@ -44,7 +51,7 @@ public class DevsState extends DevsObject{
 	
 
 	/**
-	 * Ajoute un port si il n'existe pas déjà pour cet état.
+	 * Ajoute un port si il n'existe pas déjà pour ce couple.
 	 * @param port Le port à ajouter.
 	 * @return True si l'ajout est effectué avec succès, false sinon.
 	 */
@@ -129,6 +136,21 @@ public class DevsState extends DevsObject{
 			this.ports.removeAll(pendingPorts);
 		}
 	}
+
+	public Set<DevsObject> getModels() {
+		return models;
+	}
+
+	public void setModels(Set<DevsObject> models) {
+		this.models = models;
+	}
 	
+	public void addModel(DevsObject model){
+		models.add(model);
+	}
+	
+	public void removeModel(DevsObject model){
+		models.remove(model);
+	}
 	
 }

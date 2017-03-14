@@ -3,7 +3,7 @@ package main;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import devs.DevsState;
+import devs.DevsCouple;
 import devs.Port;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -28,7 +28,7 @@ import util.Util;
  */
 public class EditStateStage extends Stage{
 
-	EditStateStage(MainGui main,DevsState state){
+	EditStateStage(MainGui main,DevsCouple state){
 				BorderPane BP=new BorderPane();
 				VBox Fields;
 				HBox Name,Input,Output;
@@ -74,7 +74,8 @@ public class EditStateStage extends Stage{
 
 				OK.setOnAction(event->{
 					state.setName(textField.getText());
-					main.drawName(state);
+					main.setTitle("fwkDevs ("+state.getName().getText()+")");
+					//main.drawName(state);
 					Set<Port> newPorts=new LinkedHashSet<>();
 					for(int i=0;i<spIn.getValue();i++){
 						newPorts.add(new Port(state,"in"+i,Port.Type.INPUT));
@@ -91,7 +92,6 @@ public class EditStateStage extends Stage{
 							changedPorts.add(port);
 					}
 					
-					//main.removePorts(state,changedPorts);
 					
 					if(spIn.getValue()!=inSize){
 						main.removeInPorts(state);
@@ -103,9 +103,6 @@ public class EditStateStage extends Stage{
 						state.updateOutPorts(newPorts);
 						main.drawOutPorts(state);
 					}
-					/*main.removePorts(state);
-					state.setPorts(newPorts);
-					main.drawPorts(state);*/
 					main.updatePortTranslations(state);
 					close();
 				});

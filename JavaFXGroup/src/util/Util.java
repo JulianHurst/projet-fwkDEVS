@@ -11,7 +11,7 @@ import java.util.Set;
 import DEVSModel.DEVSAtomic;
 import devs.DevsEnclosing;
 import devs.DevsObject;
-import devs.DevsState;
+import devs.DevsModel;
 import devs.Port;
 
 public final class Util {
@@ -99,11 +99,11 @@ public final class Util {
 	 * @param objects L'ensemble d'objets.
 	 * @return L'ensemble des modèles atomiques.
 	 */
-	public static Set<DevsState> getModels(Set<DevsObject> objects){
-		Set<DevsState> result=new LinkedHashSet<>();
+	public static Set<DevsModel> getModels(Set<DevsObject> objects){
+		Set<DevsModel> result=new LinkedHashSet<>();
 		for(DevsObject obj : objects){
-			if(obj.getClass().equals(DevsState.class))
-			result.add((DevsState)obj);
+			if(obj.getClass().equals(DevsModel.class))
+			result.add((DevsModel)obj);
 		}
 		return result;
 	}

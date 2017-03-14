@@ -16,9 +16,10 @@ import com.sun.codemodel.JMod;
 import com.sun.codemodel.JPackage;
 
 import DEVSModel.DEVSCoupled;
+import devs.DevsCouple;
 import devs.DevsEnclosing;
+import devs.DevsModel;
 import devs.DevsObject;
-import devs.DevsState;
 import devs.Port;
 import devs.Transition;
 import gate.Generator;
@@ -41,26 +42,26 @@ public class CodeGenerator {
 	 * @throws IOException Lancée si un problème survient lors de l'écriture.
 	 * @throws ClassNotFoundException Lancée si une classe n'est pas trouvée.
 	 */
-	public void generateCouple(String coupleName,Set<DevsObject> objects) throws JClassAlreadyExistsException, IOException, ClassNotFoundException{
-		JDefinedClass couple = jp._class(coupleName);
-		couple._extends(DEVSCoupled.class);
+	public void generateCouple(String coupleClassName,Set<DevsObject> objects,DevsCouple couple) throws JClassAlreadyExistsException, IOException, ClassNotFoundException{
+		JDefinedClass coupleClass = jp._class(coupleClassName);
+		coupleClass._extends(DEVSCoupled.class);
 		
-		JMethod constructor = couple.constructor(JMod.PUBLIC);
+		JMethod constructor = coupleClass.constructor(JMod.PUBLIC);
 		JBlock constructorBody = constructor.body();
 		
-		for(DevsState model : Util.getModels(objects)){
-			couple.field(JMod.PRIVATE, Class.forName("models."+model.getName().getText().replaceAll("[0-9]+$", "")), model.getName().getText());
+		for(DevsModel model : Util.getModels(objects)){
+			coupleClass.field(JMod.PRIVATE, Class.forName("models."+model.getObjectName()), model.getName().getText());
 			constructorBody.assign(JExpr.ref(model.getName().getText()), JExpr._new(codeModel._ref(Class.forName("models."+model.getName().getText().replaceAll("[0-9]+$", "")))).arg(model.getName().getText()));
 			constructorBody.invoke(JExpr._this().invoke("getSubModels"),"add").arg(JExpr.ref(model.getName().getText()));
 		}
 		for(DevsEnclosing enclosing : Util.getEnclosing(objects)){
 			if(enclosing.getType().equals(DevsEnclosing.Type.GEN)){
-				couple.field(JMod.PUBLIC, Generator.class, enclosing.getName().getText());
+				coupleClass.field(JMod.PUBLIC, Generator.class, enclosing.getName().getText());
 				constructorBody.assign(JExpr.ref(enclosing.getName().getText()), JExpr._new(codeModel._ref(Generator.class)).arg(enclosing.getName().getText()));
 				constructorBody.invoke(JExpr._this().invoke("getSubModels"),"add").arg(JExpr.ref(enclosing.getName().getText()));
 			}
 			else{
-				couple.field(JMod.PUBLIC, Transducer.class, enclosing.getName().getText());
+				coupleClass.field(JMod.PUBLIC, Transducer.class, enclosing.getName().getText());
 				constructorBody.assign(JExpr.ref(enclosing.getName().getText()), JExpr._new(codeModel._ref(Transducer.class)).arg(enclosing.getName().getText()));
 				constructorBody.invoke(JExpr._this().invoke("getSubModels"),"add").arg(JExpr.ref(enclosing.getName().getText()));
 			}
@@ -79,53 +80,68 @@ public class CodeGenerator {
 			}
 		}
 		
-		for(DevsState model : Util.getModels(objects)){
+		for(DevsModel model : Util.getModels(objects)){
 			for(Transition transition : model.getTransitions()){
-				JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addIC");
-				linkGenToSm.arg(JExpr.ref(model.getName().getText()).invoke("getOutPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getSrc(), objects))));
-				linkGenToSm.arg(JExpr.ref(transition.getDest().getParent().getName().getText()).invoke("getInPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getDest(), objects))));
+				if(!transition.getDest().getParent().getClass().equals(DevsCouple.class)){
+					JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addIC");
+					linkGenToSm.arg(JExpr.ref(model.getName().getText()).invoke("getOutPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getSrc(), objects))));
+					linkGenToSm.arg(JExpr.ref(transition.getDest().getParent().getName().getText()).invoke("getInPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getDest(), objects))));
+				}
 			}
 		}
-		
-		Set<Transition> allTransitions=new LinkedHashSet<>();
-		Set<Port> allPorts=new LinkedHashSet<>();
-		for(DevsObject obj : objects){
-			allTransitions.addAll(obj.getTransitions());
-			allPorts.addAll(obj.getPorts());
-		}
-		
-		Set<Port> linkedPorts=new LinkedHashSet<>();
-		for(Transition transition : allTransitions){
-			linkedPorts.add(transition.getSrc());
-			linkedPorts.add(transition.getDest());
-		}
-		
-		allPorts.removeAll(linkedPorts);
 		
 		int inInc=0;
 		int outInc=0;
-		for(Port port : allPorts){
-			if(port.getType().equals(Port.Type.INPUT)){
-				couple.field(JMod.PUBLIC, DEVSModel.Port.class, "in"+inInc);
-				constructorBody.assign(JExpr.ref("in"+inInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("in"+inInc));
-				constructorBody.invoke(JExpr._this(),"addInPort").arg(JExpr.ref("in"+inInc));
-				JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addIC");
-				linkGenToSm.arg(JExpr.invoke("getInPort").arg("in"+inInc));
-				linkGenToSm.arg(JExpr.ref(port.getParent().getName().getText()).invoke("getInPorts").invoke("get").arg(JExpr.lit(Util.findPortId(port, objects))));
-				inInc++;
-			}
-			else{
-				couple.field(JMod.PUBLIC, DEVSModel.Port.class, "out"+outInc);
-				constructorBody.assign(JExpr.ref("out"+outInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("out"+outInc));
-				constructorBody.invoke(JExpr._this(),"addOutPort").arg(JExpr.ref("out"+outInc));
-				JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addIC");
-				linkGenToSm.arg(JExpr.ref(port.getParent().getName().getText()).invoke("getOutPorts").invoke("get").arg(JExpr.lit(Util.findPortId(port, objects))));
-				linkGenToSm.arg(JExpr.invoke("getOutPort").arg("out"+outInc));
-				outInc++;
+		for(DevsObject obj : objects){
+			for(Transition transition : obj.getTransitions()){
+				if(couple.getPorts().contains(transition.getSrc())){
+					if(transition.getSrc().getType().equals(Port.Type.INPUT)){
+						coupleClass.field(JMod.PUBLIC, DEVSModel.Port.class, "in"+inInc);
+						constructorBody.assign(JExpr.ref("in"+inInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("in"+inInc));
+						constructorBody.invoke(JExpr._this(),"addInPort").arg(JExpr.ref("in"+inInc));
+						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEIC");
+						linkGenToSm.arg(JExpr.invoke("getInPort").arg("in"+inInc));
+						linkGenToSm.arg(JExpr.ref(transition.getDest().getParent().getName().getText()).invoke("getInPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getDest(), objects))));
+						inInc++;
+					}
+					else{
+						coupleClass.field(JMod.PUBLIC, DEVSModel.Port.class, "out"+outInc);
+						constructorBody.assign(JExpr.ref("out"+outInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("out"+outInc));
+						constructorBody.invoke(JExpr._this(),"addOutPort").arg(JExpr.ref("out"+outInc));
+						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEOC");
+						linkGenToSm.arg(JExpr.ref(transition.getDest().getParent().getName().getText()).invoke("getOutPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getDest(), objects))));
+						linkGenToSm.arg(JExpr.invoke("getOutPort").arg("out"+outInc));
+						outInc++;
+					}
+				}
+				if(couple.getPorts().contains(transition.getDest())){
+					if(transition.getSrc().getType().equals(Port.Type.INPUT)){
+						coupleClass.field(JMod.PUBLIC, DEVSModel.Port.class, "in"+inInc);
+						constructorBody.assign(JExpr.ref("in"+inInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("in"+inInc));
+						constructorBody.invoke(JExpr._this(),"addInPort").arg(JExpr.ref("in"+inInc));
+						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEIC");
+						linkGenToSm.arg(JExpr.invoke("getInPort").arg("in"+inInc));
+						linkGenToSm.arg(JExpr.ref(transition.getSrc().getParent().getName().getText()).invoke("getInPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getSrc(), objects))));
+						inInc++;
+					}
+					else{
+						coupleClass.field(JMod.PUBLIC, DEVSModel.Port.class, "out"+outInc);
+						constructorBody.assign(JExpr.ref("out"+outInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("out"+outInc));
+						constructorBody.invoke(JExpr._this(),"addOutPort").arg(JExpr.ref("out"+outInc));
+						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEOC");
+						linkGenToSm.arg(JExpr.ref(transition.getSrc().getParent().getName().getText()).invoke("getOutPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getSrc(), objects))));
+						linkGenToSm.arg(JExpr.invoke("getOutPort").arg("out"+outInc));
+						outInc++;
+					}
+				}
+					
+					
+					
 			}
 		}
 		
-		JMethod setSelectPriority = couple.method(JMod.PUBLIC, void.class, "setSelectPriority");
+		
+		JMethod setSelectPriority = coupleClass.method(JMod.PUBLIC, void.class, "setSelectPriority");
 		setSelectPriority.annotate(Override.class);
 		setSelectPriority.body()._return();
 		codeModel.build(new File(System.getProperty("user.dir")+"/src"));

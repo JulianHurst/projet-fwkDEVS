@@ -23,15 +23,18 @@ import devs.DevsObject;
 import devs.Port;
 import devs.Transition;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
-import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
@@ -47,7 +50,6 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
-import javafx.scene.text.Text;
 import javafx.scene.transform.Scale;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -71,7 +73,7 @@ public class MainGui extends Application{
 	/**
 	 * Les actions possibles
 	 */
-	private enum Action{RECT,LINE,MODEL,COUPLE,GEN,TRANS,NONE};
+	private enum Action{LINE,MODEL,COUPLE,GEN,TRANS,NONE};
 	/**
 	 * L'action active.
 	 */
@@ -108,20 +110,16 @@ public class MainGui extends Application{
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		VBox root = new VBox();	
-		Button rectButton,lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton,generateButton,executeButton;
+		Button lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton;
 		
-		//Permet de dessiner des rectangles
-		rectButton=new Button("Rect");
 		//Permet de dessiner des generateurs
-		genButton=new Button("Gen");
+		genButton=new Button("Generator");
 		//Permet de dessiner des transducers
-		transButton=new Button("Trans");
+		transButton=new Button("Transducer");
 		//Permet de dessiner des liens entre rectangles
-		lineButton=new Button("Line");
+		lineButton=new Button("Transition");
 		//Permet d'effacer tout (rectangles et liens)
 		cleanButton=new Button("Clear");
-		generateButton=new Button("Generate");
-		executeButton=new Button("Execute");
 		
 		zoomButton=new Button("Zoom in");
 		unzoomButton=new Button("Zoom out");
@@ -142,15 +140,6 @@ public class MainGui extends Application{
 			}
 		});
 		
-		rectButton.setOnAction(e->{
-			src=null;
-			if(srcPort!=null)
-				srcPort.getCircle().setStroke(Color.BLACK);
-			currentAction=Action.RECT;
-			for(DevsObject state : couple.getModels())
-				for(Port p : state.getPorts())
-					p.getCircle().setOnMousePressed(event->{});
-		});
 		
 		genButton.setOnAction(e->{
 			src=null;
@@ -174,23 +163,6 @@ public class MainGui extends Application{
 			
 		});
 
-		generateButton.setOnAction(e->{
-			generate();
-		});
-		
-		executeButton.setOnAction(e->{
-			generate();
-			compile(couple.getName().getText());
-			try {
-				execute();
-			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} catch (MalformedURLException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-		});
 		
 		lineButton.setOnAction(e->{
 			currentAction=Action.LINE;
@@ -239,6 +211,69 @@ public class MainGui extends Application{
 			reloadAll();
 		});
 		
+		MenuBar menuBar = new MenuBar();
+		
+		Menu file = new Menu("File");
+		MenuItem newItem = new MenuItem("New");
+		MenuItem genItem = new MenuItem("Generate");
+		MenuItem compileItem = new MenuItem("Compile");
+		MenuItem execItem = new MenuItem("Execute");
+		MenuItem closeItem = new MenuItem("Close");
+		
+		newItem.setOnAction(e->{
+			try {
+				new MainGui().start(new Stage());
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		});
+		
+		genItem.setOnAction(e->{
+			generate();
+		});
+		
+		compileItem.setOnAction(e->{
+			generate();
+			compile(couple.getName().getText());
+		});
+		
+		execItem.setOnAction(e->{
+			generate();
+			compile(couple.getName().getText());
+			try {
+				execute();
+			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException
+					| MalformedURLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		});
+		
+		
+		closeItem.setOnAction(e->{
+			Platform.exit();
+		});
+		
+		file.getItems().add(newItem);
+		file.getItems().add(genItem);
+		file.getItems().add(compileItem);
+		file.getItems().add(execItem);
+		file.getItems().add(closeItem);
+		
+		Menu edit = new Menu("Edit");
+		MenuItem coupleItem = new MenuItem("Edit couple");
+		
+		coupleItem.setOnAction(e->{
+			EditStateStage stage=new EditStateStage(this,couple);
+			stage.show();
+		});
+		
+		edit.getItems().add(coupleItem);
+
+		menuBar.getMenus().add(file);
+		menuBar.getMenus().add(edit);
+		
 		
 		double sceneWidth=Screen.getPrimary().getVisualBounds().getWidth();
 		double sceneHeight=Screen.getPrimary().getVisualBounds().getHeight();
@@ -252,16 +287,6 @@ public class MainGui extends Application{
 			if(e.getButton().equals(MouseButton.PRIMARY)){
 				boolean superimposed=false;
 				switch(currentAction){
-					case RECT:
-						for(DevsObject obj : couple.getModels()){
-							Shape rect = obj.getShape();
-							if(e.getX()>=rect.getBoundsInParent().getMinX() && e.getX()<=rect.getBoundsInParent().getMinX()+rect.getBoundsInLocal().getWidth() &&
-									e.getY()>=rect.getBoundsInParent().getMinY() && e.getY()<=rect.getBoundsInParent().getMinY()+rect.getBoundsInLocal().getHeight())
-								superimposed=true;
-						}
-						if(!superimposed)
-							drawRect(e.getX(),e.getY(),"état");
-						break;
 					case LINE:
 						break;
 					case MODEL:
@@ -332,11 +357,6 @@ public class MainGui extends Application{
 		});
 		
 		ToolBar toolBar = new ToolBar(
-				new Button("Run"),
-				new Button("Compile"),
-				new Button("Save"),
-				new Separator(Orientation.VERTICAL),
-				rectButton,
 				genButton,
 				transButton,
 				lineButton,
@@ -346,9 +366,7 @@ public class MainGui extends Application{
 				zoomButton,
 				unzoomButton,
 				new Separator(Orientation.VERTICAL),
-				reloadButton,
-				generateButton,
-				executeButton
+				reloadButton
 		);
 		s = new Scene(root, 1200, 600, Color.BLACK);
 		
@@ -410,6 +428,7 @@ public class MainGui extends Application{
 		split.setOrientation(Orientation.HORIZONTAL);
 		split.getItems().addAll(tabPane,scroller);
 
+		root.getChildren().add(menuBar);
 		root.getChildren().add(toolBar);
 		root.getChildren().add(split);
 		primaryStage.setTitle("fwkDEVS (unnamed couple)");

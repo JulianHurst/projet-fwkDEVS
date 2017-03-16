@@ -4,23 +4,15 @@ package devs;
 import javafx.scene.shape.Line;
 
 /**
- * Une transition entre deux états.
+ * Une transition entre deux objets.
  * @author Julian
  *
  */
 public class Transition {
 	/**
-	 * Les états de source et de destination.
+	 * Les ports de source et de destination.
 	 */
 	private Port src,dest;
-	/**
-	 * L'évènement associé à la transition.
-	 */
-	private Object event;
-	/**
-	 * L'action associé à la transition.
-	 */
-	private Object action;
 	/**
 	 * La ligne qui représente la transition graphiquement.
 	 */
@@ -30,31 +22,8 @@ public class Transition {
 		this.src=src;
 		this.dest=dest;
 		this.line=line;
-		event=new String();
-		action=new String();
 	}
 	
-
-	public Object getEvent() {
-		return event;
-	}
-
-
-	public Object getAction() {
-		return action;
-	}
-
-
-	public void setEvent(Object events) {
-		this.event = events;
-	}
-
-
-	public void setAction(Object actions) {
-		this.action = actions;
-	}
-
-
 	public Port getSrc() {
 		return src;
 	}

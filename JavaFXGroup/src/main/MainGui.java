@@ -150,8 +150,8 @@ public class MainGui extends Application{
 			if(srcPort!=null)
 				srcPort.getCircle().setStroke(Color.BLACK);
 			currentAction=Action.GEN;
-			for(DevsObject state : couple.getModels())
-				for(Port p : state.getPorts())
+			for(DevsObject object : couple.getModels())
+				for(Port p : object.getPorts())
 					p.getCircle().setOnMousePressed(event->{});
 			
 		});
@@ -161,8 +161,8 @@ public class MainGui extends Application{
 			if(srcPort!=null)
 				srcPort.getCircle().setStroke(Color.BLACK);
 			currentAction=Action.TRANS;
-			for(DevsObject state : couple.getModels())
-				for(Port p : state.getPorts())
+			for(DevsObject object : couple.getModels())
+				for(Port p : object.getPorts())
 					p.getCircle().setOnMousePressed(event->{});
 			
 		});
@@ -170,19 +170,19 @@ public class MainGui extends Application{
 		
 		lineButton.setOnAction(e->{
 			currentAction=Action.LINE;
-			for(DevsObject state : couple.getModels()){
-				for(Port p : state.getPorts()){
+			for(DevsObject object : couple.getModels()){
+				for(Port p : object.getPorts()){
 					Circle c=p.getCircle();
 					c.setOnMousePressed(event->{
 						if(event.getButton().equals(MouseButton.PRIMARY)){
 							if(src==null){
-								src=state;
+								src=object;
 								srcPort=p;
 								c.setStroke(Color.RED);
 							}
-							else if(!state.equals(src) && (!srcPort.getType().equals(p.getType())|| src.equals(couple) || state.equals(couple))){
+							else if(!object.equals(src) && (!srcPort.getType().equals(p.getType())|| src.equals(couple) || object.equals(couple))){
 								if(srcPort.getType().equals(Port.Type.INPUT)){
-									drawLine(state,p,srcPort);
+									drawLine(object,p,srcPort);
 								}
 								else
 									drawLine(src,srcPort,p);
@@ -200,9 +200,9 @@ public class MainGui extends Application{
 			Set<DevsObject> pending = new LinkedHashSet<>();
 			currentAction=Action.NONE;
 			canvas.getChildren().remove(2, canvas.getChildren().size());
-			for(DevsObject obj : couple.getModels()){
-				if(!obj.getClass().equals(DevsCouple.class))
-					pending.add(obj);
+			for(DevsObject object : couple.getModels()){
+				if(!object.getClass().equals(DevsCouple.class))
+					pending.add(object);
 			}
 			couple.getModels().removeAll(pending);
 			drawPorts(couple);
@@ -419,8 +419,8 @@ public class MainGui extends Application{
 			if(srcPort!=null)
 				srcPort.getCircle().setStroke(Color.BLACK);
 			currentAction=Action.MODEL;
-			for(DevsObject state : couple.getModels())
-				for(Port p : state.getPorts())
+			for(DevsObject object : couple.getModels())
+				for(Port p : object.getPorts())
 					p.getCircle().setOnMousePressed(event->{});
 			modelName=modelsList.getSelectionModel().getSelectedItem().toString();
 		});
@@ -430,8 +430,8 @@ public class MainGui extends Application{
 			if(srcPort!=null)
 				srcPort.getCircle().setStroke(Color.BLACK);
 			currentAction=Action.COUPLE;
-			for(DevsObject state : couple.getModels())
-				for(Port p : state.getPorts())
+			for(DevsObject object : couple.getModels())
+				for(Port p : object.getPorts())
 					p.getCircle().setOnMousePressed(event->{});
 			modelName=couplesList.getSelectionModel().getSelectedItem().toString();
 		});
@@ -603,7 +603,7 @@ public class MainGui extends Application{
 			//couple.getShape().resize(couple.getShape().getBoundsInParent().getMaxX(), rect.getBoundsInParent().getMaxY());
 		}
 		
-		//Dessine le nom de l'état au centre du rectangle
+		//Dessine le nom de l'objet au centre du rectangle
 		drawName(Drect);
 		drawPorts(Drect);
 	}
@@ -704,16 +704,16 @@ public class MainGui extends Application{
 	}
 	
 	/**
-	 * Dessine le nom d'un état dans le centre du rectangle.
-	 * @param state L'état concerné.
+	 * Dessine le nom d'un objet dans le centre du rectangle.
+	 * @param object L'objet concerné.
 	 */
-	public void drawName(DevsObject state){
-		Shape rect=state.getShape();
-		state.getName().setX((rect.getBoundsInLocal().getMinX()+rect.getBoundsInLocal().getWidth()/2)-state.getName().getBoundsInLocal().getWidth()/2);
-		state.getName().setY(rect.getBoundsInLocal().getMinY()+rect.getBoundsInLocal().getHeight()/2);
-		if(canvas.getChildren().contains(state.getName()))
-			canvas.getChildren().remove(state.getName());
-		canvas.getChildren().add(state.getName());
+	public void drawName(DevsObject object){
+		Shape rect=object.getShape();
+		object.getName().setX((rect.getBoundsInLocal().getMinX()+rect.getBoundsInLocal().getWidth()/2)-object.getName().getBoundsInLocal().getWidth()/2);
+		object.getName().setY(rect.getBoundsInLocal().getMinY()+rect.getBoundsInLocal().getHeight()/2);
+		if(canvas.getChildren().contains(object.getName()))
+			canvas.getChildren().remove(object.getName());
+		canvas.getChildren().add(object.getName());
 	}
 	
 	/**
@@ -737,11 +737,11 @@ public class MainGui extends Application{
 	
 	/**
 	 * Dessine une transition entre deux ports.
-	 * @param state L'état concerné.
+	 * @param object L'objet concerné.
 	 * @param src Le port source.
 	 * @param dest Le port destinataire.
 	 */
-	public void drawLine(DevsObject state,Port src,Port dest){
+	public void drawLine(DevsObject object,Port src,Port dest){
 		Line line = new Line();
 		line.setStartX(src.getCircle().getCenterX()+src.getCircle().getLayoutX());
 		line.setStartY(src.getCircle().getCenterY()+src.getCircle().getLayoutY());
@@ -749,7 +749,7 @@ public class MainGui extends Application{
 		line.setEndY(dest.getCircle().getCenterY()+dest.getCircle().getLayoutY());
 		Transition T=new Transition(src,dest,line);
 		
-		state.addTransition(T);
+		object.addTransition(T);
 		if(canvas.getChildren().contains(line))
 			canvas.getChildren().remove(line);
 		canvas.getChildren().add(line);
@@ -761,8 +761,8 @@ public class MainGui extends Application{
 	 * @return True s'il n'y a qu'une transition venant ou allant d'un port, false sinon.
 	 */
 	public boolean oneTransition(Transition trans){
-		for(DevsObject state : couple.getModels()){
-			for(Transition transition : state.getTransitions()){
+		for(DevsObject object : couple.getModels()){
+			for(Transition transition : object.getTransitions()){
 				if(isSrcOrDest(trans,transition))
 					return false;
 			}
@@ -782,21 +782,21 @@ public class MainGui extends Application{
 	}
 	
 	/**
-	 * Dessine les ports sur un état donné.
-	 * @param state L'état concerné.
+	 * Dessine les ports sur un objet donné.
+	 * @param object L'objet concerné.
 	 */
-	public void drawPorts(DevsObject state){
-		drawInPorts(state);
-		drawOutPorts(state);
+	public void drawPorts(DevsObject object){
+		drawInPorts(object);
+		drawOutPorts(object);
 	}
 	
 	/**
-	 * Dessine les ports d'entrée sur un état donné.
-	 * @param state L'état concerné.
+	 * Dessine les ports d'entrée sur un objet donné.
+	 * @param object L'objet concerné.
 	 */
-	public void drawInPorts(DevsObject state){
-		Shape rect = state.getShape();
-		Set<Port> inputPorts=state.getInputPorts();
+	public void drawInPorts(DevsObject object){
+		Shape rect = object.getShape();
+		Set<Port> inputPorts=object.getInputPorts();
 		double step = rect.getBoundsInLocal().getHeight()/(inputPorts.size()+1);
 		int inc=1;
 		Circle circle;
@@ -813,12 +813,12 @@ public class MainGui extends Application{
 	}
 		
 	/**
-	 * Dessine les ports de sortie sur un état donné.
-	 * @param state L'état concerné.
+	 * Dessine les ports de sortie sur un objet donné.
+	 * @param object L'objet concerné.
 	 */
-	public void drawOutPorts(DevsObject state){
-		Shape rect = state.getShape();
-		Set<Port> outputPorts=state.getOutputPorts();
+	public void drawOutPorts(DevsObject object){
+		Shape rect = object.getShape();
+		Set<Port> outputPorts=object.getOutputPorts();
 		double step=rect.getBoundsInLocal().getHeight()/(outputPorts.size()+1);
 		int inc=1;
 		Circle circle;
@@ -836,11 +836,11 @@ public class MainGui extends Application{
 	
 	
 	/**
-	 * Efface les ports d'un état.
-	 * @param state L'état concerné.
+	 * Efface les ports d'un objet.
+	 * @param object L'objet concerné.
 	 */
-	public void removePorts(DevsObject state){
-		for(Port p : state.getPorts()){
+	public void removePorts(DevsObject object){
+		for(Port p : object.getPorts()){
 			if(canvas.getChildren().contains(p.getCircle())){
 				canvas.getChildren().remove(p.getCircle());
 				canvas.getChildren().remove(p.getName());
@@ -860,11 +860,11 @@ public class MainGui extends Application{
 	}*/
 	
 	/**
-	 * Efface les ports d'un état.
-	 * @param state L'état concerné.
+	 * Efface les ports d'un couple.
+	 * @param couple Le couple concerné.
 	 */
-	public void removeInPorts(DevsCouple state){
-		for(Port p : state.getInputPorts()){
+	public void removeInPorts(DevsCouple couple){
+		for(Port p : couple.getInputPorts()){
 			if(canvas.getChildren().contains(p.getCircle())){
 				canvas.getChildren().remove(p.getCircle());
 				canvas.getChildren().remove(p.getName());
@@ -874,11 +874,11 @@ public class MainGui extends Application{
 	}
 	
 	/**
-	 * Efface les ports d'un état.
-	 * @param state L'état concerné.
+	 * Efface les ports d'un couple.
+	 * @param couple Le couple concerné.
 	 */
-	public void removeOutPorts(DevsCouple state){
-		for(Port p : state.getOutputPorts()){
+	public void removeOutPorts(DevsCouple couple){
+		for(Port p : couple.getOutputPorts()){
 			if(canvas.getChildren().contains(p.getCircle())){
 				canvas.getChildren().remove(p.getCircle());
 				canvas.getChildren().remove(p.getName());
@@ -894,25 +894,25 @@ public class MainGui extends Application{
 	 */
 	public void removeTransitions(Port p){
 		Set<Transition> pendingTransitions;
-		for(DevsObject state : couple.getModels()){
+		for(DevsObject couple : couple.getModels()){
 			pendingTransitions=new LinkedHashSet<>();
-			for(Transition transition : state.getTransitions()){
+			for(Transition transition : couple.getTransitions()){
 				if(transition.getSrc().equals(p) || transition.getDest().equals(p)){
 					canvas.getChildren().remove(transition.getLine());
 					pendingTransitions.add(transition);
 				}
 			}
-			state.getTransitions().removeAll(pendingTransitions);
+			couple.getTransitions().removeAll(pendingTransitions);
 		}
 	}
 	
 	/**
 	 * Met à jour les données de translation pour les ports.
-	 * @param state L'état contenant les ports concernés.
+	 * @param couple Le couple contenant les ports concernés.
 	 */
-	public void updatePortTranslations(DevsCouple state){
-		Shape rect=state.getShape();
-		for(Port p : state.getPorts()){
+	public void updatePortTranslations(DevsCouple couple){
+		Shape rect=couple.getShape();
+		for(Port p : couple.getPorts()){
 			p.getCircle().setTranslateX(rect.getBoundsInParent().getMinX()-rect.getBoundsInLocal().getMinX());
 			p.getCircle().setTranslateY(rect.getBoundsInParent().getMinY()-rect.getBoundsInLocal().getMinY());
 			p.getName().setTranslateX(rect.getBoundsInParent().getMinX()-rect.getBoundsInLocal().getMinX());
@@ -932,17 +932,17 @@ public class MainGui extends Application{
 	 * Ajoute une action pour l'évènement drag and drop sur tous les rectangles.
 	 */
 	public void setDragAndDropAll(){
-		for(DevsObject state : couple.getModels()){
-			setDragAndDrop(state);
+		for(DevsObject object : couple.getModels()){
+			setDragAndDrop(object);
 		}
 	}
 	
 	/**
-	 * Ajoute une action pour l'évènement drag and drop pour le rectangle d'un état donné.
-	 * @param state Le modèle sur lequel on veut ajouter l'action drag and drop.
+	 * Ajoute une action pour l'évènement drag and drop pour le rectangle d'un objet donné.
+	 * @param object Le objet sur lequel on veut ajouter l'action drag and drop.
 	 */
-	public void setDragAndDrop(DevsObject state){
-		Shape rect = state.getShape();
+	public void setDragAndDrop(DevsObject object){
+		Shape rect = object.getShape();
 		rect.setOnMouseDragged(e->{
 			if(e.getButton().equals(MouseButton.PRIMARY)){
 
@@ -953,10 +953,10 @@ public class MainGui extends Application{
 				rect.setLayoutY(rect.getLayoutY()+offsetY);
 				mousePosition.set(new Point2D(e.getSceneX(), e.getSceneY()));
 
-				state.getName().setLayoutX(state.getName().getLayoutX()+offsetX);
-				state.getName().setLayoutY(state.getName().getLayoutY()+offsetY);
+				object.getName().setLayoutX(object.getName().getLayoutX()+offsetX);
+				object.getName().setLayoutY(object.getName().getLayoutY()+offsetY);
 				
-				for(Port p : state.getPorts()){
+				for(Port p : object.getPorts()){
 					p.getCircle().setLayoutX(p.getCircle().getLayoutX()+offsetX);
 					p.getCircle().setLayoutY(p.getCircle().getLayoutY()+offsetY);
 					p.getName().setLayoutX(p.getName().getLayoutX()+offsetX);
@@ -979,9 +979,9 @@ public class MainGui extends Application{
 				if(!couple.getShape().getBoundsInParent().contains(rect.getBoundsInParent())){
 					rect.setLayoutX(rect.getLayoutX()-offsetX);
 					rect.setLayoutY(rect.getLayoutY()-offsetY);
-					state.getName().setLayoutX(state.getName().getLayoutX()-offsetX);
-					state.getName().setLayoutY(state.getName().getLayoutY()-offsetY);
-					for(Port p : state.getPorts()){
+					object.getName().setLayoutX(object.getName().getLayoutX()-offsetX);
+					object.getName().setLayoutY(object.getName().getLayoutY()-offsetY);
+					for(Port p : object.getPorts()){
 						p.getCircle().setLayoutX(p.getCircle().getLayoutX()-offsetX);
 						p.getCircle().setLayoutY(p.getCircle().getLayoutY()-offsetY);
 						p.getName().setLayoutX(p.getName().getLayoutX()-offsetX);
@@ -993,22 +993,23 @@ public class MainGui extends Application{
 		
 		rect.setOnMousePressed(e->{
 			if(e.getButton()==MouseButton.SECONDARY){
-				if(state.getClass().equals(DevsEnclosing.class)){
-					if(state.getName().getText().contains("Gen"))
+				if(object.getClass().equals(DevsEnclosing.class)){
+					if(object.getName().getText().contains("Gen"))
 						DevsEnclosing.GEN_QUANTITY--;
 					else
 						DevsEnclosing.TRANS_QUANTITY--;
 				}
 				canvas.getChildren().remove(rect);
-				canvas.getChildren().remove(state.getName());
-				removePorts(state);
-				couple.getModels().remove(state);
+				canvas.getChildren().remove(object.getName());
+				removePorts(object);
+				couple.getModels().remove(object);
 			}
 			else{
 				mousePosition.set(new Point2D(e.getSceneX(),e.getSceneY()));
 			}
 		});
 	}
+
 	/**
 	 * Ajoute la possibilité de modifier un état en double cliquant.
 	 * @param state L'état à modifier.

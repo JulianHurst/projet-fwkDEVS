@@ -234,10 +234,12 @@ public class MainGui extends Application{
 		});
 		
 		execItem.setOnAction(e->{
+			String coupleName = couple.getName().getText();
 			generate();
-			Util.compile(couple.getName().getText());
+			coupleName=couple.getName().getText();
+			Util.compile(coupleName);
 			try {
-				Util.execute(couple.getName().getText());
+				Util.execute(coupleName);
 			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -496,9 +498,10 @@ public class MainGui extends Application{
 			result.ifPresent(name->{
 				CodeGenerator C = new CodeGenerator();
 				couple.setName(name);
-				setTitle(name);
+				setTitle("fwkDEVS ("+name+")");
 				try {
 					C.generateCouple(name, couple.getModels(),couple);
+					System.out.println("Couple generated");
 				} catch (JClassAlreadyExistsException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -515,6 +518,7 @@ public class MainGui extends Application{
 			CodeGenerator C = new CodeGenerator();
 			try {
 				C.generateCouple(couple.getName().getText(), couple.getModels(),couple);
+				System.out.println("Couple generated");
 			} catch (ClassNotFoundException | JClassAlreadyExistsException | IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

@@ -94,9 +94,9 @@ public class Chronogram extends Stage{
 		planY.setStartY(0);
 		planY.setEndX(INITX);
 		planY.setEndY(canvas.getBoundsInParent().getHeight());
-		Text zero = new Text("zero");
+		Text zero = new Text("0");
 		zero.setX(INITX/2-zero.getBoundsInParent().getWidth()/2);
-		zero.setY(planX.getStartY()+zero.getBoundsInParent().getHeight()+5);
+		zero.setY(planX.getStartY()+zero.getBoundsInParent().getHeight()/2);
 		
 		Line oneNotch = new Line();
 		oneNotch.setStartX(INITX);
@@ -104,9 +104,9 @@ public class Chronogram extends Stage{
 		oneNotch.setEndX(INITX+10);
 		oneNotch.setEndY(planX.getStartY()-LINEHEIGHT);
 		
-		Text one = new Text("one");
+		Text one = new Text("1");
 		one.setX(INITX/2-one.getBoundsInParent().getWidth()/2);
-		one.setY(oneNotch.getStartY()-5);
+		one.setY(oneNotch.getStartY()+one.getBoundsInParent().getHeight()/2);
 		
 		canvas.getChildren().add(planX);
 		canvas.getChildren().add(planY);
@@ -134,6 +134,8 @@ public class Chronogram extends Stage{
 				}
 			}
 			else{
+				if(i==0)
+					changes++;
 				if(i>0 && results.get(i-1).intValue()==0){
 					changes++;
 					changeLine = new Line();

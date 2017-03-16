@@ -204,6 +204,7 @@ public final class Util {
 		File outputFolder = new File(System.getProperty("user.dir")+"/output");
 		for(File f : outputFolder.listFiles())
 			f.delete();
+		System.out.println("output deleted");
 	}
 	
 	/**
@@ -253,6 +254,26 @@ public final class Util {
 	    }
 	    return false;
 	}	
+	
+	/**
+	 * Vérifie si un couple d'un nom donné à été généré.
+	 * @param couple Le nom du couple.
+	 * @return True si un fichier java à été généré, false sinon.
+	 */
+	public static boolean isGenerated(String couple){
+		File coupleClass = new File("src/couples/"+couple+".java");
+		return coupleClass.exists();
+	}
+	
+	/**
+	 * Vérifie si un couple d'un nom donné à été compilé.
+	 * @param couple Le nom du couple.
+	 * @return True si un fichier class à été généré, false sinon.
+	 */
+	public static boolean isCompiled(String couple){
+		File coupleClass = new File("bin/couples/"+couple+".class");
+		return coupleClass.exists();
+	}
 
 	/**
 	 * Compile le couple spécifié.
@@ -261,6 +282,7 @@ public final class Util {
 	public static void compile(String coupleClass){
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		compiler.run(null, null, null, "-d",System.getProperty("user.dir")+"/bin",System.getProperty("user.dir")+"/src/couples/"+coupleClass+".java");
+		System.out.println("Couple compiled");
 	}
 	
 	/**
@@ -275,8 +297,10 @@ public final class Util {
 		//URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { bin.toURI().toURL() });
 		//DEVSCoupled execCouple = (DEVSCoupled)Class.forName("gen."+couple.getName().getText(),true,classLoader).newInstance();
 
+		deleteOutput();
 		DEVSCoupled execCouple = (DEVSCoupled)Class.forName("couples."+couple).newInstance();
 		Root root = new Root(execCouple,150);
 		root.startSimulation();
+		System.out.println("Couple executed");
 	}
 }

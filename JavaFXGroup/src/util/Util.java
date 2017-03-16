@@ -19,11 +19,13 @@ import javax.tools.ToolProvider;
 import DEVSModel.DEVSAtomic;
 import DEVSModel.DEVSCoupled;
 import DEVSSimulator.Root;
+import devs.DevsCouple;
 import devs.DevsEnclosing;
 import devs.DevsModel;
 import devs.DevsModule;
 import devs.DevsObject;
 import devs.Port;
+import devs.Transition;
 
 public final class Util {
 	
@@ -292,15 +294,40 @@ public final class Util {
 	 * @throws IllegalAccessException
 	 * @throws ClassNotFoundException
 	 */
-	public static void execute(String couple) throws InstantiationException, IllegalAccessException, ClassNotFoundException{ 
+	public static void execute(String couple,int simulationTime) throws InstantiationException, IllegalAccessException, ClassNotFoundException{ 
 		//File bin = new File(System.getProperty("user.dir")+"/src");
 		//URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { bin.toURI().toURL() });
 		//DEVSCoupled execCouple = (DEVSCoupled)Class.forName("gen."+couple.getName().getText(),true,classLoader).newInstance();
 
 		deleteOutput();
 		DEVSCoupled execCouple = (DEVSCoupled)Class.forName("couples."+couple).newInstance();
-		Root root = new Root(execCouple,150);
+		Root root = new Root(execCouple,simulationTime);
 		root.startSimulation();
 		System.out.println("Couple executed");
+	}
+	
+	/**
+	 * Vérifie si le couple donné est valide, c'est-à-dire que tous les ports sont reliés.
+	 * @param couple Le couple à vérifier.
+	 * @return True si le couple est valide, false sinon.
+	 */
+	public static boolean isValid(DevsCouple couple){
+		Set<Port> ports=new LinkedHashSet<>();
+		Set<Transition> transitions=new LinkedHashSet<>();
+		boolean result=false;
+		for(DevsObject obj : couple.getModels()){
+			ports.addAll(obj.getPorts());
+			transitions.addAll(obj.getTransitions());
+		}
+		for(Port port : ports){
+			result=false;
+			for(Transition transition : transitions){
+				if(port.equals(transition.getSrc()) || port.equals(transition.getDest()))
+					result=true;
+			}
+			if(!result)
+				return false;
+		}
+		return result;
 	}
 }

@@ -20,10 +20,14 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
@@ -62,7 +66,13 @@ public class MainGui extends Application{
 	 * La scène principale.
 	 */
 	private Scene s;
+	/**
+	 * La fenêtre principale.
+	 */
 	private Stage primaryStage;
+	/**
+	 * Le couple qui est en train d'être crée.
+	 */
 	private DevsCouple couple;
 	/**
 	 * Les actions possibles
@@ -230,19 +240,37 @@ public class MainGui extends Application{
 		
 		compileItem.setOnAction(e->{
 			generate();
-			Util.compile(couple.getName().getText());
+			if(Util.isGenerated(couple.getName().getText()))
+				Util.compile(couple.getName().getText());
 		});
 		
 		execItem.setOnAction(e->{
-			String coupleName = couple.getName().getText();
 			generate();
-			coupleName=couple.getName().getText();
-			Util.compile(coupleName);
-			try {
-				Util.execute(coupleName);
-			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+			final String coupleName = couple.getName().getText();
+			if(Util.isGenerated(coupleName))
+					Util.compile(coupleName);
+			if(Util.isCompiled(coupleName)){
+				TextInputDialog dialog = new TextInputDialog();
+				dialog.setTitle("Simulation time");
+				dialog.setHeaderText("Simulation time");
+				dialog.setContentText("Choose a simulation time for this execution :");
+				dialog.getEditor().textProperty().addListener(new ChangeListener<String>() {
+					@Override
+			        public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+			            if (!newValue.matches("\\d*")) {
+			                dialog.getEditor().setText(newValue.replaceAll("[^\\d]", ""));
+			            }
+			        }
+				});
+				Optional<String> result=dialog.showAndWait();
+				result.ifPresent(name->{
+					try {
+						Util.execute(coupleName,Integer.parseInt(result.get()));
+					} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				});
 			}
 		});
 		
@@ -381,7 +409,7 @@ public class MainGui extends Application{
 		couplesList = new ListView<>();
 		modelsList.getItems().addAll(Util.getAtomicModelNames());
 		for(String couple : Util.getAtomicCoupleNames()){
-			if(Util.getAtomicCouplePorts(new DevsCouple("tmp"), couple).size()>0)
+			if(Util.isCompiled(couple) && Util.getAtomicCouplePorts(new DevsCouple("tmp"), couple).size()>0)
 				couplesList.getItems().add(couple);
 		}
 		
@@ -482,13 +510,20 @@ public class MainGui extends Application{
 			}
 		});
 		this.primaryStage=primaryStage;
-		Util.deleteOutput();
 	}
 	
 	/**
 	 * Génère la classe du couple. 
 	 */
 	public void generate(){
+		if(!Util.isValid(couple)){
+			Alert alert = new Alert(AlertType.ERROR);
+			alert.setTitle("Couple error");
+			alert.setHeaderText("The couple is not well formed !");
+			alert.setContentText("All ports must be linked to generate the couple.");
+			alert.showAndWait();
+			return;
+		}
 		if(couple.getName().getText().equals("")){
 			TextInputDialog dialog = new TextInputDialog();
 			dialog.setTitle("Couple name");

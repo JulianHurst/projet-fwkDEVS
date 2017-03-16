@@ -35,7 +35,7 @@ public class Transducer extends DEVSAtomic{
 	public void deltaExt(Port p, Object ev, float e) {
 		// TODO Auto-generated method stub
 		this.time += e;
-		//System.out.println("receive " + ev);
+		//System.out.println("receive " + ev+" "+this.time);
 		this.trans.println(ev + " " + this.time);
 	}
 
@@ -58,7 +58,6 @@ public class Transducer extends DEVSAtomic{
 	}
 	
 	public void endSim(){
-		
 		this.trans.close();
 	}
 

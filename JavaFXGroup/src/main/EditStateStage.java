@@ -32,7 +32,7 @@ public class EditStateStage extends Stage{
 				BorderPane BP=new BorderPane();
 				VBox Fields;
 				HBox Name,Input,Output;
-				Text windowTitle=new Text("Edition de l'état");
+				Text windowTitle=new Text("Edit couple");
 				HBox titleBox = new HBox();
 				Label name,in,out;
 				TextField textField = new TextField();
@@ -42,7 +42,7 @@ public class EditStateStage extends Stage{
 				HBox comboBox=new HBox();
 
 				OK=new Button("OK");
-				Cancel=new Button("Annuler");
+				Cancel=new Button("Cancel");
 				Fields=new VBox(10);
 				Name=new HBox();
 				Input=new HBox();
@@ -50,11 +50,11 @@ public class EditStateStage extends Stage{
 				windowTitle.setFont(new Font(40));
 				titleBox.getChildren().add(windowTitle);
 				titleBox.setAlignment(Pos.CENTER);
-				name=new Label("Nom de l'état : ");
-				in=new Label("Nombre de ports d'entrée : ");
-				out=new Label("Nombre de ports de sortie : ");
-				spIn=new Spinner<Integer>(1, 5, state.getInputPorts().size());
-				spOut=new Spinner<Integer>(1, 5, state.getOutputPorts().size());
+				name=new Label("Name of the couple : ");
+				in=new Label("Number of inputs : ");
+				out=new Label("Number of outputs : ");
+				spIn=new Spinner<Integer>(0, 5, state.getInputPorts().size());
+				spOut=new Spinner<Integer>(0, 5, state.getOutputPorts().size());
 				
 				textField.setText(state.getName().getText());
 				textField.setOnKeyPressed(event->{
@@ -132,7 +132,7 @@ public class EditStateStage extends Stage{
 				BP.setCenter(Fields);
 				BP.setBottom(comboBox);
 				Scene scene= new Scene(BP, 600, 300, Color.BLACK);
-				this.setTitle("Edition d'état");
+				this.setTitle("Edit couple");
 				setScene(scene);
 	}
 

@@ -2,18 +2,12 @@ package main;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
-
 import com.sun.codemodel.JClassAlreadyExistsException;
 
-import DEVSModel.DEVSCoupled;
-import DEVSSimulator.Root;
 import codegen.CodeGenerator;
 import devs.DevsCouple;
 import devs.DevsEnclosing;
@@ -218,6 +212,7 @@ public class MainGui extends Application{
 		MenuItem genItem = new MenuItem("Generate");
 		MenuItem compileItem = new MenuItem("Compile");
 		MenuItem execItem = new MenuItem("Execute");
+		MenuItem chronoItem = new MenuItem("Chronogramme");
 		MenuItem closeItem = new MenuItem("Close");
 		
 		newItem.setOnAction(e->{
@@ -235,16 +230,15 @@ public class MainGui extends Application{
 		
 		compileItem.setOnAction(e->{
 			generate();
-			compile(couple.getName().getText());
+			Util.compile(couple.getName().getText());
 		});
 		
 		execItem.setOnAction(e->{
 			generate();
-			compile(couple.getName().getText());
+			Util.compile(couple.getName().getText());
 			try {
-				execute();
-			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException
-					| MalformedURLException e1) {
+				Util.execute(couple.getName().getText());
+			} catch (InstantiationException | IllegalAccessException | ClassNotFoundException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
@@ -255,10 +249,15 @@ public class MainGui extends Application{
 			Platform.exit();
 		});
 		
+		chronoItem.setOnAction(e->{
+			new Chronogram().show();
+		});
+		
 		file.getItems().add(newItem);
 		file.getItems().add(genItem);
 		file.getItems().add(compileItem);
 		file.getItems().add(execItem);
+		file.getItems().add(chronoItem);
 		file.getItems().add(closeItem);
 		
 		Menu edit = new Menu("Edit");
@@ -481,60 +480,46 @@ public class MainGui extends Application{
 			}
 		});
 		this.primaryStage=primaryStage;
+		Util.deleteOutput();
 	}
 	
 	/**
 	 * Génère la classe du couple. 
 	 */
 	public void generate(){
-		TextInputDialog dialog = new TextInputDialog();
-		dialog.setTitle("Couple name");
-		dialog.setHeaderText("Couple name");
-		dialog.setContentText("Choose a name for the couple :");
-		Optional<String> result=dialog.showAndWait();
-		result.ifPresent(name->{
+		if(couple.getName().getText().equals("")){
+			TextInputDialog dialog = new TextInputDialog();
+			dialog.setTitle("Couple name");
+			dialog.setHeaderText("Couple name");
+			dialog.setContentText("Choose a name for the couple :");
+			Optional<String> result=dialog.showAndWait();
+			result.ifPresent(name->{
+				CodeGenerator C = new CodeGenerator();
+				couple.setName(name);
+				setTitle(name);
+				try {
+					C.generateCouple(name, couple.getModels(),couple);
+				} catch (JClassAlreadyExistsException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} catch (ClassNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			});
+		}
+		else{
 			CodeGenerator C = new CodeGenerator();
-			couple.setName(name);
-			setTitle(name);
 			try {
-				C.generateCouple(name, couple.getModels(),couple);
-			} catch (JClassAlreadyExistsException e1) {
+				C.generateCouple(couple.getName().getText(), couple.getModels(),couple);
+			} catch (ClassNotFoundException | JClassAlreadyExistsException | IOException e) {
 				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} catch (ClassNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				e.printStackTrace();
 			}
-		});
-	}
-	
-	/**
-	 * Compile le couple spécifié.
-	 * @param coupleClass Le nom du couple.
-	 */
-	public void compile(String coupleClass){
-		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		compiler.run(null, null, null, "-d",System.getProperty("user.dir")+"/bin",System.getProperty("user.dir")+"/src/couples/"+coupleClass+".java");
-	}
-	
-	/**
-	 * Execute la simulation sur le couple courant.
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
-	 * @throws ClassNotFoundException
-	 * @throws MalformedURLException
-	 */
-	public void execute() throws InstantiationException, IllegalAccessException, ClassNotFoundException, MalformedURLException{ 
-		//File bin = new File(System.getProperty("user.dir")+"/src");
-		//URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { bin.toURI().toURL() });
-
-		//DEVSCoupled execCouple = (DEVSCoupled)Class.forName("gen."+couple.getName().getText(),true,classLoader).newInstance();
-		DEVSCoupled execCouple = (DEVSCoupled)Class.forName("couples."+couple.getName().getText()).newInstance();
-		Root root = new Root(execCouple,150);
-		root.startSimulation();
+		}
 	}
 	
 	/**
@@ -646,15 +631,28 @@ public class MainGui extends Application{
 		modelsList.getItems().addAll(Util.getAtomicModelNames());
 	}
 	
+	/**
+	 * Rafraichit la liste des modules.
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 * @throws InvocationTargetException
+	 * @throws NoSuchMethodException
+	 * @throws SecurityException
+	 * @throws ClassNotFoundException
+	 */
 	public void reloadCouples() throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException{
 		couplesList.getItems().clear();
 		for(String couple : Util.getAtomicCoupleNames()){
-			compile(couple);
+			Util.compile(couple);
 			if(Util.getAtomicCouplePorts(new DevsCouple("tmp"), couple).size()>0)
 				couplesList.getItems().add(couple);
 		}
 	}
 	
+	/**
+	 * Rafraichit les modules et modèles atomiques.
+	 */
 	public void reloadAll(){
 		reloadModels();
 		try {
@@ -907,47 +905,49 @@ public class MainGui extends Application{
 	public void setDragAndDrop(DevsObject state){
 		Shape rect = state.getShape();
 		rect.setOnMouseDragged(e->{
+			if(e.getButton().equals(MouseButton.PRIMARY)){
 
-			double offsetX = e.getSceneX() - mousePosition.get().getX();
-			double offsetY = e.getSceneY() - mousePosition.get().getY();
+				double offsetX = e.getSceneX() - mousePosition.get().getX();
+				double offsetY = e.getSceneY() - mousePosition.get().getY();
 
-			rect.setLayoutX(rect.getLayoutX()+offsetX);
-			rect.setLayoutY(rect.getLayoutY()+offsetY);
-			mousePosition.set(new Point2D(e.getSceneX(), e.getSceneY()));
+				rect.setLayoutX(rect.getLayoutX()+offsetX);
+				rect.setLayoutY(rect.getLayoutY()+offsetY);
+				mousePosition.set(new Point2D(e.getSceneX(), e.getSceneY()));
 
-			state.getName().setLayoutX(state.getName().getLayoutX()+offsetX);
-			state.getName().setLayoutY(state.getName().getLayoutY()+offsetY);
-			
-			for(Port p : state.getPorts()){
-				p.getCircle().setLayoutX(p.getCircle().getLayoutX()+offsetX);
-				p.getCircle().setLayoutY(p.getCircle().getLayoutY()+offsetY);
-				p.getName().setLayoutX(p.getName().getLayoutX()+offsetX);
-				p.getName().setLayoutY(p.getName().getLayoutY()+offsetY);
-				for(DevsObject s : couple.getModels()){
-					for(Transition transition : s.getTransitions()){
-						if(p.equals(transition.getSrc())){
-							transition.getLine().setStartX(transition.getSrc().getCircle().getCenterX()+transition.getSrc().getCircle().getLayoutX());
-							transition.getLine().setStartY(transition.getSrc().getCircle().getCenterY()+transition.getSrc().getCircle().getLayoutY());
-						}
-						else{
-							transition.getLine().setEndX(transition.getDest().getCircle().getCenterX()+transition.getDest().getCircle().getLayoutX());
-							transition.getLine().setEndY(transition.getDest().getCircle().getCenterY()+transition.getDest().getCircle().getLayoutY());
+				state.getName().setLayoutX(state.getName().getLayoutX()+offsetX);
+				state.getName().setLayoutY(state.getName().getLayoutY()+offsetY);
+				
+				for(Port p : state.getPorts()){
+					p.getCircle().setLayoutX(p.getCircle().getLayoutX()+offsetX);
+					p.getCircle().setLayoutY(p.getCircle().getLayoutY()+offsetY);
+					p.getName().setLayoutX(p.getName().getLayoutX()+offsetX);
+					p.getName().setLayoutY(p.getName().getLayoutY()+offsetY);
+					for(DevsObject s : couple.getModels()){
+						for(Transition transition : s.getTransitions()){
+							if(p.equals(transition.getSrc())){
+								transition.getLine().setStartX(transition.getSrc().getCircle().getCenterX()+transition.getSrc().getCircle().getLayoutX());
+								transition.getLine().setStartY(transition.getSrc().getCircle().getCenterY()+transition.getSrc().getCircle().getLayoutY());
+							}
+							else{
+								transition.getLine().setEndX(transition.getDest().getCircle().getCenterX()+transition.getDest().getCircle().getLayoutX());
+								transition.getLine().setEndY(transition.getDest().getCircle().getCenterY()+transition.getDest().getCircle().getLayoutY());
+							}
 						}
 					}
 				}
-			}
-			
-			
-			if(!couple.getShape().getBoundsInParent().contains(rect.getBoundsInParent())){
-				rect.setLayoutX(rect.getLayoutX()-offsetX);
-				rect.setLayoutY(rect.getLayoutY()-offsetY);
-				state.getName().setLayoutX(state.getName().getLayoutX()-offsetX);
-				state.getName().setLayoutY(state.getName().getLayoutY()-offsetY);
-				for(Port p : state.getPorts()){
-					p.getCircle().setLayoutX(p.getCircle().getLayoutX()-offsetX);
-					p.getCircle().setLayoutY(p.getCircle().getLayoutY()-offsetY);
-					p.getName().setLayoutX(p.getName().getLayoutX()-offsetX);
-					p.getName().setLayoutY(p.getName().getLayoutY()-offsetY);
+				
+				
+				if(!couple.getShape().getBoundsInParent().contains(rect.getBoundsInParent())){
+					rect.setLayoutX(rect.getLayoutX()-offsetX);
+					rect.setLayoutY(rect.getLayoutY()-offsetY);
+					state.getName().setLayoutX(state.getName().getLayoutX()-offsetX);
+					state.getName().setLayoutY(state.getName().getLayoutY()-offsetY);
+					for(Port p : state.getPorts()){
+						p.getCircle().setLayoutX(p.getCircle().getLayoutX()-offsetX);
+						p.getCircle().setLayoutY(p.getCircle().getLayoutY()-offsetY);
+						p.getName().setLayoutX(p.getName().getLayoutX()-offsetX);
+						p.getName().setLayoutY(p.getName().getLayoutY()-offsetY);
+					}
 				}
 			}
 		});

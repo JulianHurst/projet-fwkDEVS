@@ -1,15 +1,24 @@
 package util;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.StringTokenizer;
+
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 
 import DEVSModel.DEVSAtomic;
 import DEVSModel.DEVSCoupled;
+import DEVSSimulator.Root;
 import devs.DevsEnclosing;
 import devs.DevsModel;
 import devs.DevsModule;
@@ -187,5 +196,87 @@ public final class Util {
 		}
 		return -1;
 	}
+
+	/**
+	 * Efface le contenu du dossier output.
+	 */
+	public static void deleteOutput(){
+		File outputFolder = new File(System.getProperty("user.dir")+"/output");
+		for(File f : outputFolder.listFiles())
+			f.delete();
+	}
 	
+	/**
+	 * Renvoie un liste de résultats obtenus à partir des fichiers Trans0...Transn.
+	 * @return La liste des résultats.
+	 * @throws IOException Lancée si il y a un problème de lecture du fichier.
+	 */
+	public static List<Integer> getResults() throws IOException{
+		List<Integer> results = new ArrayList<Integer>();
+		File outputFolder = new File(System.getProperty("user.dir")+"/output");
+		//for(String name : outputFolder.list())
+			//while(!isCompletelyWritten(new File(outputFolder,name)));
+		for(String name : outputFolder.list()){
+			if(name.contains("Trans")){
+				BufferedReader reader = new BufferedReader(new FileReader(System.getProperty("user.dir")+"/output/"+name));
+				String line;
+				while ((line = reader.readLine()) != null){
+					StringTokenizer stringTok = new StringTokenizer(line);
+					results.add(Integer.parseInt(stringTok.nextToken()));
+				}
+				reader.close();
+			}
+		}
+		return results;
+	}
+
+	/**
+	 * Est censé vérifier que l'écriture d'un fichier soit finie.
+	 * @param file Le fichier à vérifier.
+	 * @return True si l'écriture du fichier est finie, false sinon.
+	 */
+	private static boolean isCompletelyWritten(File file) {
+	    RandomAccessFile stream = null;
+	    try {
+	        stream = new RandomAccessFile(file, "rw");
+	        return true;
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    } finally {
+	        if (stream != null) {
+	            try {
+	                stream.close();
+	            } catch (IOException e) {
+	            	e.printStackTrace();
+	            }
+	        }
+	    }
+	    return false;
+	}	
+
+	/**
+	 * Compile le couple spécifié.
+	 * @param coupleClass Le nom du couple.
+	 */
+	public static void compile(String coupleClass){
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		compiler.run(null, null, null, "-d",System.getProperty("user.dir")+"/bin",System.getProperty("user.dir")+"/src/couples/"+coupleClass+".java");
+	}
+	
+	/**
+	 * Execute la simulation sur le couple spécifié.
+	 * @param couple Le nom du couple.
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws ClassNotFoundException
+	 */
+	public static void execute(String couple) throws InstantiationException, IllegalAccessException, ClassNotFoundException{ 
+		//File bin = new File(System.getProperty("user.dir")+"/src");
+		//URLClassLoader classLoader = URLClassLoader.newInstance(new URL[] { bin.toURI().toURL() });
+		//DEVSCoupled execCouple = (DEVSCoupled)Class.forName("gen."+couple.getName().getText(),true,classLoader).newInstance();
+
+		DEVSCoupled execCouple = (DEVSCoupled)Class.forName("couples."+couple).newInstance();
+		Root root = new Root(execCouple,150);
+		root.startSimulation();
+	}
 }

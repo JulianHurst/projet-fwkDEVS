@@ -16,30 +16,30 @@ Pensez à inclure le [jar de fwkdevs](http://www.lsis.org/hamria/fwkdevs-v0.7.ja
 # Arborescence
 projet-fwkDEVS  
 └── projet-fwkDEVS  
-    ├── bin  
-    │   ├── codegen  
-    │   ├── devs  
-    │   ├── gate  
-    │   ├── main  
-    │   ├── models  
-    │   └── util  
-    ├── crash  
-    ├── doc  
-    │   ├── codegen  
-    │   ├── devs  
-    │   ├── main  
-    │   ├── models  
-    │   └── util  
-    ├── input  
-    ├── lib (IMPORTANT : .jar a importer dans le build path du projet)  
-    └── src  
-        ├── codegen  
-        ├── couples  
-        ├── devs  
-        ├── gate  
-        ├── main  
-        ├── models  
-        └── util  
+&nbsp;&nbsp;&nbsp;&nbsp;├── bin  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── codegen  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── devs  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── gate  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── main  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── models  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── util 
+&nbsp;&nbsp;&nbsp;&nbsp;├── crash  
+&nbsp;&nbsp;&nbsp;&nbsp;├── doc  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── codegen  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── devs  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── main  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── models  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── util  
+&nbsp;&nbsp;&nbsp;&nbsp;├── input  
+&nbsp;&nbsp;&nbsp;&nbsp;├── lib (IMPORTANT : .jar a importer dans le build path du projet)  
+&nbsp;&nbsp;&nbsp;&nbsp;└── src  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── codegen  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── couples  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── devs  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── gate  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── main  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── models  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── util  
 
 25 directories
 

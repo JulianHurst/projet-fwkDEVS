@@ -204,6 +204,8 @@ public final class Util {
 	 */
 	public static void deleteOutput(){
 		File outputFolder = new File(System.getProperty("user.dir")+"/output");
+		if(!outputFolder.exists())
+			outputFolder.mkdir();
 		for(File f : outputFolder.listFiles())
 			f.delete();
 		System.out.println("output deleted");
@@ -217,6 +219,8 @@ public final class Util {
 	public static List<Integer> getResults() throws IOException{
 		List<Integer> results = new ArrayList<Integer>();
 		File outputFolder = new File(System.getProperty("user.dir")+"/output");
+		if(!outputFolder.exists())
+			outputFolder.mkdir();
 		//for(String name : outputFolder.list())
 			//while(!isCompletelyWritten(new File(outputFolder,name)));
 		for(String name : outputFolder.list()){

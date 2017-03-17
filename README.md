@@ -14,37 +14,34 @@ conséquent	faciliter	l'implémentation	des	modèles	DEVS	auprès	des	utilisateu
 Pensez à inclure le [jar de fwkdevs](http://www.lsis.org/hamria/fwkdevs-v0.7.jar) et le [jar de codemodel](http://central.maven.org/maven2/com/sun/codemodel/codemodel/2.6/codemodel-2.6.jar) dans le build path du projet sinon le programme ne compilera pas.  
 
 # Arborescence
-├───JavaFXGroup
-│   └───output
-└───projet-fwkDEVS
-    ├───.settings
-    ├───bin
-    │   ├───codegen
-    │   ├───devs
-    │   ├───gate
-    │   ├───main
-    │   ├───models
-    │   └───util
-    ├───crash
-    ├───doc
-    │   ├───codegen
-    │   ├───devs
-    │   ├───main
-    │   ├───models
-    │   └───util
-    ├───input
-    ├───lib (IMPORTANT : .jar a importer dans le projet)
-    ├───output
-    └───src
-        ├───codegen
-        ├───couples
-        ├───devs
-        ├───gate
-        ├───main
-        ├───models
-        └───util
+projet-fwkDEVS  
+└── projet-fwkDEVS  
+    ├── bin  
+    │   ├── codegen  
+    │   ├── devs  
+    │   ├── gate  
+    │   ├── main  
+    │   ├── models  
+    │   └── util  
+    ├── crash  
+    ├── doc  
+    │   ├── codegen  
+    │   ├── devs  
+    │   ├── main  
+    │   ├── models  
+    │   └── util  
+    ├── input  
+    ├── lib (IMPORTANT : .jar a importer dans le build path du projet)  
+    └── src  
+        ├── codegen  
+        ├── couples  
+        ├── devs  
+        ├── gate  
+        ├── main  
+        ├── models  
+        └── util  
 
-
+25 directories
 
 # Javadoc
 [Docs](https://rawgit.com/JulianHurst/projet-fwkDEVS/master/projet-fwkDEVS/doc/index.html)

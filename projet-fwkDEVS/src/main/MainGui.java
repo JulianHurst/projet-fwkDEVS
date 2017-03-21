@@ -114,7 +114,7 @@ public class MainGui extends Application{
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		VBox root = new VBox();	
-		Button lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton;
+		Button lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton, docButton;
 		
 		//Permet de dessiner des generateurs
 		genButton=new Button("Generator");
@@ -129,6 +129,7 @@ public class MainGui extends Application{
 		unzoomButton=new Button("Zoom out");
 		
 		reloadButton=new Button("Reload lists");
+		docButton = new Button("Documentation");
 
 		zoomButton.setOnAction(e->{
 			if(zoomer.getX()<50){
@@ -213,6 +214,10 @@ public class MainGui extends Application{
 		
 		reloadButton.setOnAction(e->{
 			reloadAll();
+		});
+		
+		docButton.setOnAction(e->{
+			new Documentation().show();
 		});
 		
 		MenuBar menuBar = new MenuBar();
@@ -395,7 +400,9 @@ public class MainGui extends Application{
 				zoomButton,
 				unzoomButton,
 				new Separator(Orientation.VERTICAL),
-				reloadButton
+				reloadButton,
+				new Separator(Orientation.VERTICAL),
+				docButton
 		);
 		s = new Scene(root, 1200, 600, Color.BLACK);
 		

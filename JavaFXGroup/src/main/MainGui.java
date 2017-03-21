@@ -22,6 +22,8 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
@@ -29,6 +31,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
@@ -42,6 +45,7 @@ import javafx.scene.control.TabPane.TabClosingPolicy;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToolBar;
 import javafx.scene.input.MouseButton;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -114,7 +118,7 @@ public class MainGui extends Application{
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		VBox root = new VBox();	
-		Button lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton;
+		Button lineButton,cleanButton,zoomButton,unzoomButton,reloadButton,genButton,transButton, docButton;
 		
 		//Permet de dessiner des generateurs
 		genButton=new Button("Generator");
@@ -129,6 +133,9 @@ public class MainGui extends Application{
 		unzoomButton=new Button("Zoom out");
 		
 		reloadButton=new Button("Reload lists");
+		
+		//affichage de la doc
+		docButton = new Button("Documentation");
 
 		zoomButton.setOnAction(e->{
 			if(zoomer.getX()<50){
@@ -213,6 +220,30 @@ public class MainGui extends Application{
 		
 		reloadButton.setOnAction(e->{
 			reloadAll();
+		});
+		
+		//Demande la doc
+		docButton.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                
+                Label secondLabel = new Label("Hello");
+                
+                StackPane secondaryLayout = new StackPane();
+                secondaryLayout.getChildren().add(secondLabel);
+                
+                Scene secondScene = new Scene(secondaryLayout, 200, 100);
+
+                Stage secondStage = new Stage();
+                secondStage.setTitle("Second Stage");
+                secondStage.setScene(secondScene);
+                
+                //Set position of second window, related to primary window.
+                secondStage.setX(primaryStage.getX() + 250);
+                secondStage.setY(primaryStage.getY() + 100);
+ 
+                secondStage.show();
+            }
 		});
 		
 		MenuBar menuBar = new MenuBar();
@@ -395,7 +426,9 @@ public class MainGui extends Application{
 				zoomButton,
 				unzoomButton,
 				new Separator(Orientation.VERTICAL),
-				reloadButton
+				reloadButton,
+				new Separator(Orientation.VERTICAL),
+				docButton
 		);
 		s = new Scene(root, 1200, 600, Color.BLACK);
 		
@@ -701,6 +734,13 @@ public class MainGui extends Application{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	/**
+	 * Demande l'affichage de la documentation dans une nouvelle fenêtre
+	 */
+	public void showDoc(){
+		
 	}
 	
 	/**

@@ -55,7 +55,8 @@ public class Chronogram extends Stage{
 
 		ScrollPane scroller = new ScrollPane();
 		scroller.setContent(container);
-		Scene scene= new Scene(scroller, 600, 300, Color.BLACK);
+		scroller.setVvalue(0.5);
+		Scene scene= new Scene(scroller, 1000, 600, Color.BLACK);
 		this.setTitle("Chronogram");
 		this.setScene(scene);
 		draw();

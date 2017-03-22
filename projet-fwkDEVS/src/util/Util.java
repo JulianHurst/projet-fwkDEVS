@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.FileSystem;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -287,7 +288,11 @@ public final class Util {
 	 */
 	public static void compile(String coupleClass){
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		compiler.run(null, null, null, "-d",System.getProperty("user.dir")+"/bin",System.getProperty("user.dir")+"/src/couples/"+coupleClass+".java");
+		if(compiler==null){
+			System.out.println("Il faut le JDK 1.8 ou au dessus");
+			return;
+		}			
+		compiler.run(null, null, null, "-d",System.getProperty("user.dir")+File.separator+"bin",System.getProperty("user.dir")+File.separator+"src"+File.separator+"couples"+File.separator+coupleClass+".java");
 		System.out.println("Couple compiled");
 	}
 	

@@ -1,5 +1,8 @@
 package main;
 
+import java.io.File;
+import java.net.MalformedURLException;
+
 import javafx.scene.Scene;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
@@ -16,16 +19,27 @@ public class Documentation extends Stage{
 	
 	public Documentation(){
 		WebView webView = new WebView();
-		WebEngine webEngine = webView.getEngine(); 
-		webEngine.load("file://"+System.getProperty("user.dir")+htmlPath+"Index.html");
+		WebEngine webEngine = webView.getEngine();
+		
+		File htmlFile = new File(System.getProperty("user.dir")+htmlPath+"Index.html");
+		File cssFile = new File(System.getProperty("user.dir")+cssPath+"devs.css");
+		
+		
+		System.out.println("file://"+System.getProperty("user.dir")+cssPath+"devs.css");
 		
 		//Pour le css
-		webEngine.setUserStyleSheetLocation("file://"+System.getProperty("user.dir")+cssPath+"devs.css");
+		try {
+			webEngine.load(htmlFile.toURI().toURL().toString());
+			webEngine.setUserStyleSheetLocation(cssFile.toURI().toURL().toString());
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         
         StackPane secondaryLayout = new StackPane();
         secondaryLayout.getChildren().add(webView);
         
-        Scene secondScene = new Scene(secondaryLayout, 200, 100);
+        Scene secondScene = new Scene(secondaryLayout, 1200,800);
 
         setTitle("Documentation");
         setScene(secondScene);

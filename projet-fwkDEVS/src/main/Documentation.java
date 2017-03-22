@@ -10,11 +10,17 @@ import javafx.scene.web.WebView;
 import javafx.stage.Stage;
 
 /**
- * Affichage de la documentation
+ * Affichage de la documentation.
  *
  */
 public class Documentation extends Stage{
+	/**
+	 * Le chemin vers les fichiers html.
+	 */
 	private static String htmlPath="/userDoc/";
+	/**
+	 * Le chemin vers les fichiers css.
+	 */
 	private static String cssPath=htmlPath+"css/";
 	
 	public Documentation(){
@@ -25,9 +31,6 @@ public class Documentation extends Stage{
 		File cssFile = new File(System.getProperty("user.dir")+cssPath+"devs.css");
 		
 		
-		System.out.println("file://"+System.getProperty("user.dir")+cssPath+"devs.css");
-		
-		//Pour le css
 		try {
 			webEngine.load(htmlFile.toURI().toURL().toString());
 			webEngine.setUserStyleSheetLocation(cssFile.toURI().toURL().toString());

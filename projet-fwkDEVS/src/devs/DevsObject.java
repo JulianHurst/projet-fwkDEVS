@@ -6,6 +6,11 @@ import java.util.Set;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 
+/**
+ * La classe qu'étendent les objets essentiels à la simulation DEVS.
+ * @author juju
+ *
+ */
 public abstract class DevsObject {
 	/**
 	 * Le nom de l'objet.

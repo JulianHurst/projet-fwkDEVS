@@ -57,12 +57,12 @@ public class CodeGenerator {
 		}
 		for(DevsEnclosing enclosing : Util.getEnclosing(objects)){
 			if(enclosing.getType().equals(DevsEnclosing.Type.GEN)){
-				coupleClass.field(JMod.PUBLIC, Generator.class, enclosing.getName().getText());
+				coupleClass.field(JMod.PRIVATE, Generator.class, enclosing.getName().getText());
 				constructorBody.assign(JExpr.ref(enclosing.getName().getText()), JExpr._new(codeModel._ref(Generator.class)).arg(enclosing.getName().getText()));
 				constructorBody.invoke(JExpr._this().invoke("getSubModels"),"add").arg(JExpr.ref(enclosing.getName().getText()));
 			}
 			else{
-				coupleClass.field(JMod.PUBLIC, Transducer.class, enclosing.getName().getText());
+				coupleClass.field(JMod.PRIVATE, Transducer.class, enclosing.getName().getText());
 				constructorBody.assign(JExpr.ref(enclosing.getName().getText()), JExpr._new(codeModel._ref(Transducer.class)).arg(enclosing.getName().getText()));
 				constructorBody.invoke(JExpr._this().invoke("getSubModels"),"add").arg(JExpr.ref(enclosing.getName().getText()));
 			}
@@ -106,7 +106,7 @@ public class CodeGenerator {
 			for(Transition transition : obj.getTransitions()){
 				if(couple.getPorts().contains(transition.getSrc())){
 					if(transition.getSrc().getType().equals(Port.Type.INPUT)){
-						coupleClass.field(JMod.PUBLIC, DEVSModel.Port.class, "in"+inInc);
+						coupleClass.field(JMod.PRIVATE, DEVSModel.Port.class, "in"+inInc);
 						constructorBody.assign(JExpr.ref("in"+inInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("in"+inInc));
 						constructorBody.invoke(JExpr._this(),"addInPort").arg(JExpr.ref("in"+inInc));
 						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEIC");
@@ -115,7 +115,7 @@ public class CodeGenerator {
 						inInc++;
 					}
 					else{
-						coupleClass.field(JMod.PUBLIC, DEVSModel.Port.class, "out"+outInc);
+						coupleClass.field(JMod.PRIVATE, DEVSModel.Port.class, "out"+outInc);
 						constructorBody.assign(JExpr.ref("out"+outInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("out"+outInc));
 						constructorBody.invoke(JExpr._this(),"addOutPort").arg(JExpr.ref("out"+outInc));
 						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEOC");
@@ -126,7 +126,7 @@ public class CodeGenerator {
 				}
 				if(couple.getPorts().contains(transition.getDest())){
 					if(transition.getSrc().getType().equals(Port.Type.INPUT)){
-						coupleClass.field(JMod.PUBLIC, DEVSModel.Port.class, "in"+inInc);
+						coupleClass.field(JMod.PRIVATE, DEVSModel.Port.class, "in"+inInc);
 						constructorBody.assign(JExpr.ref("in"+inInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("in"+inInc));
 						constructorBody.invoke(JExpr._this(),"addInPort").arg(JExpr.ref("in"+inInc));
 						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEIC");
@@ -135,7 +135,7 @@ public class CodeGenerator {
 						inInc++;
 					}
 					else{
-						coupleClass.field(JMod.PUBLIC, DEVSModel.Port.class, "out"+outInc);
+						coupleClass.field(JMod.PRIVATE, DEVSModel.Port.class, "out"+outInc);
 						constructorBody.assign(JExpr.ref("out"+outInc), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg("out"+outInc));
 						constructorBody.invoke(JExpr._this(),"addOutPort").arg(JExpr.ref("out"+outInc));
 						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEOC");
@@ -156,70 +156,5 @@ public class CodeGenerator {
 		setSelectPriority.body()._return();
 		codeModel.build(new File(System.getProperty("user.dir")+"/src"));
 	}
-	
-	/*public void generateStates(String stateName) throws JClassAlreadyExistsException, IOException{
-		stateMachine = jp._class(stateName);
-		stateMachine.javadoc().add("La classe "+stateName+".");
-		stateMachine._extends(DEVSAtomic.class);
-		//JEnumConstant states = state.enumConstant("states");
-		//states.arg(JExpr.lit("state"));
-		JDefinedClass states = stateMachine._enum("states");
-		states.enumConstant("state");
-		JFieldVar currentState = stateMachine.field(JMod.PRIVATE, states, "currentState");
-		JFieldVar inPort = stateMachine.field(JMod.PRIVATE, Port.class, "inport");
-		JFieldVar outPort = stateMachine.field(JMod.PRIVATE, Port.class, "outport");
-		JFieldVar DELAY = stateMachine.field(JMod.PRIVATE | JMod.FINAL, float.class, "DELAY",JExpr.lit(10.0f));
-		
-		
-		JMethod constructor=stateMachine.constructor(JMod.PUBLIC);
-		constructor.param(String.class, "name");
-		constructor.javadoc().add("Crée un nouveau "+stateMachine.name()+".");
-			
-		JBlock constructorBody=constructor.body();
-		constructorBody.directStatement("super();");
-		constructorBody.invoke("init");
-		constructorBody.assign(JExpr._this().ref("name"),JExpr.ref("name"));
-		constructorBody.assign(JExpr._this().ref(inPort.name()),JExpr._new(codeModel._ref(Port.class)).arg(JExpr._this()).arg("inport"));
-		constructorBody.assign(JExpr._this().ref(outPort.name()),JExpr._new(codeModel._ref(Port.class)).arg(JExpr._this()).arg("outport"));
-		
-		JMethod init = stateMachine.method(JMod.PUBLIC, void.class, "init");
-		init.annotate(Override.class);
-		init.body()._return();
-		
-		JMethod deltaExt = stateMachine.method(JMod.PUBLIC, void.class, "deltaExt");
-		deltaExt.annotate(Override.class);
-		deltaExt.param(Port.class, "arg0");
-		deltaExt.param(Object.class, "arg1");
-		deltaExt.param(float.class, "arg2");
-		deltaExt.body()._return();
-		
-		JMethod getDuration = stateMachine.method(JMod.PUBLIC, float.class, "getDuration");
-		getDuration.annotate(Override.class);
-		getDuration.body()._return(JExpr.lit(0));
-		
-		JMethod deltaInt = stateMachine.method(JMod.PUBLIC, void.class, "deltaInt");
-		deltaInt.annotate(Override.class);
-		deltaInt.body()._return();
-		
-		JMethod lambda = stateMachine.method(JMod.PUBLIC, Object[].class, "lambda");
-		lambda.annotate(Override.class);
-		lambda.body()._return(JExpr._null());
-		
-	}*/
-	
-	/*public static void main(String[] args){
-		CodeGenerator G=new CodeGenerator();
-		try {
-			G.generateStates("Test"+"State");
-			//G.generateCouple("TestCouple");
-
-            //Mettre le chemin où créer le/les fichiers 
-			G.codeModel.build(new File("/home/juju/Documents/TCPSpecLog/src/"));
-
-		} catch (JClassAlreadyExistsException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}	
-	}*/
 	
 }

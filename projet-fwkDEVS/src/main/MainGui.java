@@ -227,7 +227,7 @@ public class MainGui extends Application{
 		MenuItem genItem = new MenuItem("Generate");
 		MenuItem compileItem = new MenuItem("Compile");
 		MenuItem execItem = new MenuItem("Execute");
-		MenuItem chronoItem = new MenuItem("Chronogramme");
+		MenuItem chronoItem = new MenuItem("Chronogram");
 		MenuItem closeItem = new MenuItem("Close");
 		
 		newItem.setOnAction(e->{

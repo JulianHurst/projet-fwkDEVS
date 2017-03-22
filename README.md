@@ -40,8 +40,9 @@ projet-fwkDEVS
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── main  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── models  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── util  
-
-25 directories
+&nbsp;&nbsp;&nbsp;&nbsp;└── userDoc
+&nbsp;&nbsp;&nbsp;&nbsp;└── css  
+27 directories
 
 # Javadoc
 [Docs](https://rawgit.com/JulianHurst/projet-fwkDEVS/master/projet-fwkDEVS/doc/index.html)

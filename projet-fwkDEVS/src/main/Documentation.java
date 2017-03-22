@@ -31,9 +31,8 @@ public class Documentation extends Stage{
         
         Scene secondScene = new Scene(secondaryLayout, 200, 100);
 
-        Stage secondStage = new Stage();
-        secondStage.setTitle("Documentation");
-        secondStage.setScene(secondScene);
+        setTitle("Documentation");
+        setScene(secondScene);
         
 	}
 }

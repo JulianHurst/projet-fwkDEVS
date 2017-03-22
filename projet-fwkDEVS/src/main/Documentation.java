@@ -11,14 +11,16 @@ import javafx.stage.Stage;
  *
  */
 public class Documentation extends Stage{
+	private static String htmlPath="/userDoc/";
+	private static String cssPath=htmlPath+"css/";
 	
 	public Documentation(){
 		WebView webView = new WebView();
 		WebEngine webEngine = webView.getEngine(); 
-		webEngine.load("file://"+System.getProperty("user.dir")+"/userDoc/Index.html");
+		webEngine.load("file://"+System.getProperty("user.dir")+htmlPath+"Index.html");
 		
 		//Pour le css
-		//webEngine.setUserStyleSheetLocation();
+		webEngine.setUserStyleSheetLocation("file://"+System.getProperty("user.dir")+cssPath+"devs.css");
         
         StackPane secondaryLayout = new StackPane();
         secondaryLayout.getChildren().add(webView);

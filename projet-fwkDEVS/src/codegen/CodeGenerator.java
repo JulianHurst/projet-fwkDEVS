@@ -100,8 +100,6 @@ public class CodeGenerator {
 			}
 		}
 
-		int inInc=0;
-		int outInc=0;
 		for(Port p : couple.getInputPorts()){
 			coupleClass.field(JMod.PRIVATE, DEVSModel.Port.class, p.getName().getText());
 			constructorBody.assign(JExpr.ref(p.getName().getText()), JExpr._new(codeModel._ref(DEVSModel.Port.class)).arg(JExpr._this()).arg(p.getName().getText()));
@@ -118,28 +116,24 @@ public class CodeGenerator {
 					if(transition.getSrc().getType().equals(Port.Type.INPUT)){
 						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEIC");
 						linkGenToSm.arg(JExpr.invoke("getInPort").arg(transition.getSrc().getName().getText()));
-						linkGenToSm.arg(JExpr.ref(transition.getDest().getParent().getName().getText()).invoke("getInPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getDest(), objects))));
-						inInc++;
+						linkGenToSm.arg(JExpr.ref(transition.getDest().getParent().getName().getText()).invoke("getInPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getDest(), objects))));						
 					}
 					else{
 						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEOC");
 						linkGenToSm.arg(JExpr.ref(transition.getDest().getParent().getName().getText()).invoke("getOutPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getDest(), objects))));
-						linkGenToSm.arg(JExpr.invoke("getOutPort").arg(transition.getSrc().getName().getText()));
-						outInc++;
+						linkGenToSm.arg(JExpr.invoke("getOutPort").arg(transition.getSrc().getName().getText()));						
 					}
 				}
 				if(couple.getPorts().contains(transition.getDest())){
 					if(transition.getSrc().getType().equals(Port.Type.INPUT)){
 						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEIC");
 						linkGenToSm.arg(JExpr.invoke("getInPort").arg(transition.getDest().getName().getText()));
-						linkGenToSm.arg(JExpr.ref(transition.getSrc().getParent().getName().getText()).invoke("getInPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getSrc(), objects))));
-						inInc++;
+						linkGenToSm.arg(JExpr.ref(transition.getSrc().getParent().getName().getText()).invoke("getInPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getSrc(), objects))));						
 					}
 					else{
 						JInvocation linkGenToSm = constructorBody.invoke(JExpr._this(),"addEOC");
 						linkGenToSm.arg(JExpr.ref(transition.getSrc().getParent().getName().getText()).invoke("getOutPorts").invoke("get").arg(JExpr.lit(Util.findPortId(transition.getSrc(), objects))));
-						linkGenToSm.arg(JExpr.invoke("getOutPort").arg(transition.getDest().getName().getText()));
-						outInc++;
+						linkGenToSm.arg(JExpr.invoke("getOutPort").arg(transition.getDest().getName().getText()));						
 					}
 				}
 					

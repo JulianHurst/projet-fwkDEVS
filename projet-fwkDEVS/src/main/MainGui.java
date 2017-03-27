@@ -334,7 +334,7 @@ public class MainGui extends Application{
 						if(!superimposed){
 							int inc=0;
 							for(DevsObject obj : couple.getModels()){
-								if(obj.getName().getText().matches(modelName+"[0-9]+"))
+								if(obj.getName().getText().matches(modelName+"[0-9]+") && !obj.equals(couple))
 									inc++;
 							}
 							drawRect(e.getX(),e.getY(),modelName+inc);

@@ -185,7 +185,7 @@ public class MainGui extends Application{
 								if(srcPort.getType().equals(Port.Type.INPUT) && !p.getType().equals(Port.Type.OUTPUT)){
 									drawLine(object,p,srcPort);
 								}
-								else if(srcPort.getType().equals(Port.Type.OUTPUT) && (!p.getType().equals(Port.Type.OUTPUT) || (p.getType().equals(Port.Type.OUTPUT) && p.getParent().equals(couple))))
+								else if(srcPort.getType().equals(Port.Type.OUTPUT) && ((!p.getType().equals(Port.Type.OUTPUT) && !src.equals(couple)) || (p.getType().equals(Port.Type.OUTPUT) && p.getParent().equals(couple))))
 									drawLine(src,srcPort,p);
 								srcPort.getCircle().setStroke(Color.BLACK);
 								src=null;
